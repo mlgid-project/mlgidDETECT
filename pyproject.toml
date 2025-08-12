@@ -1,0 +1,33 @@
+[project]
+name = "mlgiddetect"
+version = "0.1.0"
+description = "Inference paackage for GIWAXS peak detection"
+authors = [{ name = "Constantin Völter", email = "constantin.voelter@gmail.com" }]
+license = { text = "MIT" }
+requires-python = ">=3.9"
+
+dependencies = [
+    "appdirs",
+    "h5py",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "pyyaml",
+    "scipy",
+    "tifffile",
+    "torch",
+    "torchvision",
+    "onnxruntime-gpu",
+    "opencv-python"
+]
+
+[tool.setuptools.packages.find]
+include = ["mlgiddetect"]
+
+
+[project.scripts]
+mlgiddetect = "main:main"
+
+[build-system]
+requires = ["setuptools>=65", "wheel"]
+build-backend = "setuptools.build_meta"

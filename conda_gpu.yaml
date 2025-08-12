@@ -1,0 +1,14 @@
+name: mlgiddetect-gpu
+channels:
+  - conda-forge
+  - nvidia/label/cuda-12.9.1
+dependencies:
+  - python=3.9
+  - pip
+  - ffmpeg=4.3.2
+  - libcudnn
+  - libstdcxx-ng
+  - cuda-runtime
+  - cupy
+  - pip:
+      - -e .
