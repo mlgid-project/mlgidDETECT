@@ -17,7 +17,7 @@ PREPROCESSING:
   POLAR_CONVERSION: True
 
 INPUT:
-  #IMGPATH: './w4_mapbbr32.tif'
+  #IMGPATH: './inputs/w4_mapbbr32.tif'
   DATASET: '/home/testuser/38_labeled.h5'
   LABELED: False
 

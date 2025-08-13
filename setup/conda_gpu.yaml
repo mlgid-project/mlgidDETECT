@@ -2,13 +2,25 @@ name: mlgiddetect-gpu
 channels:
   - conda-forge
   - nvidia/label/cuda-12.9.1
-dependencies:
+dependencies:  
   - python=3.9
   - pip
+  - appdirs
+  - h5py
+  - matplotlib
+  - numpy
+  - onnxruntime
+  - pandas
+  - pytorch
+  - pyyaml
+  - scipy
+  - tifffile
+  - torchvision
   - ffmpeg=4.3.2
   - libcudnn
   - libstdcxx-ng
   - cuda-runtime
   - cupy
+
   - pip:
-      - -e .
+    - -e ../

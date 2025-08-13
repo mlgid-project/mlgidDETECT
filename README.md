@@ -14,16 +14,20 @@
 [https://docs.anaconda.com/miniconda/#quick-command-line-install](https://docs.anaconda.com/miniconda/#quick-command-line-install)
 
 * Move into directory:
-``` cd mlgidDETECT```
+```cd mlgidDETECT```
 
 * (Option 1) Create environment with CPU only\
+```cd setup```\
 ```conda env create -f conda_cpu.yaml```\
-```conda activate mlgiddetect-cpu```
+```conda activate mlgiddetect-cpu```\
 
 * (Option 2) Create environment with GPU support\
-```python setup_cuda.py```
-```conda activate mlgiddetect-gpu```
-```conda env config vars set LD_LIBRARY_PATH=${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}```
+```cd setup```\
+```python setup_cuda.py```\
+```conda activate mlgiddetect-gpu```\
+```conda env config vars set LD_LIBRARY_PATH=${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}```\
+```conda deactivate```\
+```conda activate mlgiddetect-gpu```\
 Set ```PREPROCESSING CUDA: True``` in the config file
 
 
@@ -49,4 +53,4 @@ Set ```PREPROCESSING CUDA: True``` in the config file
 
 ### GPU support with CUDA 12.X
 If a GPU is available, it is automatically used for inference.
-To use CUDA for preprocesing, use the install instructions for GPU support.
+To use CUDA for preprocessing, use the install instructions for GPU support.

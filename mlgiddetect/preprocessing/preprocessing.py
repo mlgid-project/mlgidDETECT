@@ -16,9 +16,6 @@ def standard_preprocessing(config, raw_reciprocal_img: np.array, counter = None)
     config.GEO_RECIPROCAL_SHAPE = list(raw_reciprocal_img.shape)
 
     if config.PREPROCESSING_CUDA:
-        if cp is None:
-            logging.error("CuPy is required for CUDA preprocessing but was not found.")
-            sys.exit()
         gpu_img = cv2.cuda_GpuMat()
         gpu_img.upload(raw_reciprocal_img)
         raw_reciprocal_img = gpu_img
@@ -38,5 +35,10 @@ def standard_preprocessing(config, raw_reciprocal_img: np.array, counter = None)
         equalized_polar = grayscale_to_color(equalized_polar)
         equalized_polar = equalized_polar[:,:,:,:]
         equalized_polar = np.pad(equalized_polar, ((0,0),(0,0,),(0,496), (0,0)))
+
+    if config.PREPROCESSING_CUDA:
+        equalized_polar = cp.asnumpy(equalized_polar)
+        raw_polar_img = cp.asnumpy(raw_polar_img)
+        mask = cp.asnumpy(mask)
 
     return equalized_polar, raw_polar_img, mask

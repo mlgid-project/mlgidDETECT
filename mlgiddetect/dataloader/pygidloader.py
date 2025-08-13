@@ -147,7 +147,7 @@ def load_worker(data_loader: PyGIDDataset):
     data_loader.read_queue.put(None)
 
 
-saving_dtype = np.dtype([
+pygid_results_dtype = np.dtype([
         ('amplitude', 'f4'),
         ('angle', 'f4'),
         ('angle_width', 'f4'),
@@ -166,6 +166,27 @@ saving_dtype = np.dtype([
         ('visibility', 'i4'),
         ('id', 'i4'),
     ])
+
+def get_results_array(img_container):
+    results_array = np.zeros(len(img_container.radius_width), dtype=pygid_results_dtype)
+    results_array['amplitude'] = [0] * len(img_container.radius_width)
+    results_array['angle'] = img_container.angle
+    results_array['angle_width'] = [abs(num) for num in img_container.angle_width]
+    results_array['radius'] = img_container.radius
+    results_array['radius_width'] = img_container.radius_width
+    results_array['q_xy'] = img_container.qzqxyboxes[1]
+    results_array['q_z'] = img_container.qzqxyboxes[0]
+    results_array['theta'] = [0] * len(img_container.radius_width)
+    results_array['A'] = [0] * len(img_container.radius_width)
+    results_array['B'] = [0] * len(img_container.radius_width)
+    results_array['C'] = [0] * len(img_container.radius_width)
+    results_array['is_ring'] = [0] * len(img_container.radius_width)
+    results_array['is_cut_qz'] = [0] * len(img_container.radius_width)
+    results_array['is_cut_qxy'] = [0] * len(img_container.radius_width)
+    results_array['visibility'] = [0] * len(img_container.radius_width)
+    results_array['score'] = img_container.scores
+    results_array['id'] = list(range(len(img_container.radius)))
+    return results_array
 
 
 def write_worker(data_loader: PyGIDDataset):
@@ -198,25 +219,8 @@ def write_worker(data_loader: PyGIDDataset):
                     if isinstance(group[name], Dataset):
                         del group[name]
 
-            results_struct = np.zeros(len(img_container.radius_width), dtype=saving_dtype)
-            results_struct['amplitude'] = [0] * len(img_container.radius_width)
-            results_struct['angle'] = img_container.angle
-            results_struct['angle_width'] = [abs(num) for num in img_container.angle_width]
-            results_struct['radius'] = img_container.radius
-            results_struct['radius_width'] = img_container.radius_width
-            results_struct['q_xy'] = img_container.qzqxyboxes[1]
-            results_struct['q_z'] = img_container.qzqxyboxes[0]
-            results_struct['theta'] = [0] * len(img_container.radius_width)
-            results_struct['A'] = [0] * len(img_container.radius_width)
-            results_struct['B'] = [0] * len(img_container.radius_width)
-            results_struct['C'] = [0] * len(img_container.radius_width)
-            results_struct['is_ring'] = [0] * len(img_container.radius_width)
-            results_struct['is_cut_qz'] = [0] * len(img_container.radius_width)
-            results_struct['is_cut_qxy'] = [0] * len(img_container.radius_width)
-            results_struct['visibility'] = [0] * len(img_container.radius_width)
-            results_struct['score'] = img_container.scores
-            results_struct['id'] = list(range(len(img_container.radius)))
-            group.create_dataset('detected_peaks', data=results_struct, dtype=saving_dtype)
+            results_array = get_results_array(img_container)
+            group.create_dataset('detected_peaks', data=results_array, dtype=pygid_results_dtype)
 
         except:
             f.close()

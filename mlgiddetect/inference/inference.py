@@ -4,6 +4,7 @@ import numpy as np
 import onnxruntime as rt
 from mlgiddetect.utils import path_utils
 from mlgiddetect.dataloader import ImageContainer
+import torch
 
 class Inference:
     def __init__(self, config):
@@ -12,11 +13,12 @@ class Inference:
         if model_path is None:
             logging.error('could not get model file. Exiting')
             sys.exit()
+
         sess_options = rt.SessionOptions()
-        sess_options.log_severity_level = 4
+        sess_options.log_severity_level = 3
         logging.info("Loading model")
         available_providers = rt.get_available_providers()
-        preferred_providers = ["CUDAExecutionProvider"] if "CUDAExecutionProvider" in available_providers else ["CPUExecutionProvider"]
+        preferred_providers = ["CUDAExecutionProvider"] if "CUDAExecutionProvider" in available_providers and torch.cuda.is_available() else ["CPUExecutionProvider"]
 
         if preferred_providers[0] == 'CUDAExecutionProvider':
             logging.info("Using the GPU for inference")
