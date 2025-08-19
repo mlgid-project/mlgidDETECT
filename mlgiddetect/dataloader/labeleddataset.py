@@ -182,9 +182,6 @@ def load_worker(data_loader: H5GIWAXSDataset):
             image.reciprocal_labels.img_nr = counter
             image.reciprocal_labels.img_name = key
             data_loader.create_boxes(image)
-            if data_loader.config.PREPROCESSING_SPLIT != 1:
-                image.split_polar_images, image.converted_polar_image, image.raw_polar_image = data_loader.preprocess_func(data_loader.config, image.raw_reciprocal, counter)
-            else:
-                image.converted_polar_image, image.raw_polar_image, image.converted_mask = data_loader.preprocess_func(data_loader.config, image.raw_reciprocal, counter)
+            image.converted_polar_image, image.raw_polar_image, image.converted_mask = data_loader.preprocess_func(data_loader.config, image.raw_reciprocal, counter)
             data_loader.image_queue.put(image)    
     data_loader.image_queue.put(None)

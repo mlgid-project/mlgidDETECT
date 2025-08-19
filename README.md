@@ -4,7 +4,7 @@
 * Clone with ssh (recommended)
 ```git clone git@github.com:mlgid-project/mlgidDETECT.git```
 * If it fails, use https:
-```git clone https://github.com/mlgid-project/mlgidGUI/mlgidDETECT.git```
+```git clone https://github.com/mlgid-project/mlgidDETECT.git```
 
 
 ## Installation
@@ -16,12 +16,12 @@
 * Move into directory:
 ```cd mlgidDETECT```
 
-* (Option 1) Create environment with CPU only\
+* (Option 1) Create environment with CPU and optional GPU inference\
 ```cd setup```\
 ```conda env create -f conda_cpu.yaml```\
 ```conda activate mlgiddetect-cpu```\
 
-* (Option 2) Create environment with GPU support\
+* (Option 2) Create environment with with additional GPU preprocessing\
 ```cd setup```\
 ```python setup_cuda.py```\
 ```conda activate mlgiddetect-gpu```\

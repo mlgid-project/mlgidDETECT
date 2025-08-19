@@ -68,5 +68,5 @@ def boxes_reciprocal_q_to_xy(img_container, reciprocal_q_boxes: np.array):
     return img_container
 
 def polar_to_cartesian(img_container):
-    img_container.qzqxyboxes = np.array([img_container.radius*np.cos(np.deg2rad(img_container.angle)), img_container.radius*np.sin(np.deg2rad(img_container.angle))])
+    img_container.qzqxyboxes = np.array([ img_container.radius*np.sin(np.deg2rad(img_container.angle)), img_container.radius*np.cos(np.deg2rad(img_container.angle))])
     return img_container

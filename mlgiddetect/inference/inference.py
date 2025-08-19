@@ -18,7 +18,13 @@ class Inference:
         sess_options.log_severity_level = 3
         logging.info("Loading model")
         available_providers = rt.get_available_providers()
-        preferred_providers = ["CUDAExecutionProvider"] if "CUDAExecutionProvider" in available_providers and torch.cuda.is_available() else ["CPUExecutionProvider"]
+        use_gpu = (
+            "CUDAExecutionProvider" in available_providers and
+            torch.cuda.is_available() and
+            not config.MODEL_FORCE_CPU
+        )
+
+        preferred_providers = ["CUDAExecutionProvider"] if use_gpu else ["CPUExecutionProvider"]
 
         if preferred_providers[0] == 'CUDAExecutionProvider':
             logging.info("Using the GPU for inference")
@@ -28,4 +34,15 @@ class Inference:
     def infer(self, img_container: ImageContainer):
         # Run inference with ONNX Runtime
         input_name = self.sess.get_inputs()[0].name
-        return self.sess.run(None, {input_name: img_container.converted_polar_image.astype(np.float32)})
+
+        try:
+            return self.sess.run(None, {input_name: img_container.converted_polar_image.astype(np.float32)})
+        except rt.capi.onnxruntime_pybind11_state.RuntimeException as e:
+            error_message = str(e)
+            if "Failed to allocate memory" in error_message or "BFCArena::AllocateRawInternal" in error_message:
+                logging.error("GPU memory allocation failed. Consider using CPU execution.")
+                # Optionally, re-raise or handle gracefully
+                raise MemoryError("GPU memory exhausted during inference.") from e
+            else:
+                # Re-raise unexpected RuntimeExceptions
+                raise

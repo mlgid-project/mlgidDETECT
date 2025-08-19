@@ -107,21 +107,21 @@ def _get_polar_grid(config,
 
 
 def _calc_polar_img(config, img: np.ndarray, yy: np.ndarray, zz: np.ndarray, algorithm: int) -> np.ndarray or None:
-    #try:
-    if config.PREPROCESSING_CUDA:
-        return cv2.cuda.remap(img,
-                        yy,
-                        zz,
-                        interpolation=algorithm)
-    else:
-        return cv2.remap(img.astype(np.float32),
-            yy.astype(np.float32),
-            zz.astype(np.float32),
-            interpolation=algorithm)
+    try:
+        if config.PREPROCESSING_CUDA:
+            return cv2.cuda.remap(img,
+                            yy,
+                            zz,
+                            interpolation=algorithm)
+        else:
+            return cv2.remap(img.astype(np.float32),
+                yy.astype(np.float32),
+                zz.astype(np.float32),
+                interpolation=algorithm)
 
-    """ except cv2.error:
+    except cv2.error:
         logging.error("Error in polar conversion!")
-        sys.exit() """
+        sys.exit()
 
 
 def calc_quazipolar_image(config, img: np.ndarray,

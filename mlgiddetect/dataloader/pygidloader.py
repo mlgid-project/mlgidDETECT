@@ -153,8 +153,8 @@ pygid_results_dtype = np.dtype([
         ('angle_width', 'f4'),
         ('radius', 'f4'),
         ('radius_width', 'f4'),
+        ('q_z', 'f4'),        
         ('q_xy', 'f4'),
-        ('q_z', 'f4'),
         ('theta', 'f4'),
         ('score', 'f4'),
         ('A', 'f4'),
@@ -174,8 +174,8 @@ def get_results_array(img_container):
     results_array['angle_width'] = [abs(num) for num in img_container.angle_width]
     results_array['radius'] = img_container.radius
     results_array['radius_width'] = img_container.radius_width
+    results_array['q_z'] = img_container.qzqxyboxes[0]    
     results_array['q_xy'] = img_container.qzqxyboxes[1]
-    results_array['q_z'] = img_container.qzqxyboxes[0]
     results_array['theta'] = [0] * len(img_container.radius_width)
     results_array['A'] = [0] * len(img_container.radius_width)
     results_array['B'] = [0] * len(img_container.radius_width)

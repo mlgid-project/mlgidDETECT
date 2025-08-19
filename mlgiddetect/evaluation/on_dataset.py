@@ -51,16 +51,12 @@ def eval_on_dataset(config, prepro_func, img_processing, postpro_func=standard_p
         confidences = img_container.polar_labels.confidences
         gt_boxes = Tensor(labels.boxes)
 
-        if config.PREPROCESSING_LINEAR_PROFILE:
-            mask = img_container.converted_mask      
-            pred_boxes, scores = img_processing.infer(giwaxs_img, mask)[0:2]
+        if postpro_func:
+            img_container = standard_postprocessing(img_container, img_processing.infer(img_container))
         else:
-            if postpro_func:
-                img_container = standard_postprocessing(img_container, img_processing.infer(img_container))
-            else:
-                img_container = img_processing.infer(img_container)
-            pred_boxes = img_container.boxes
-            scores = Tensor(img_container.scores)
+            img_container = img_processing.infer(img_container)
+        pred_boxes = img_container.boxes
+        scores = Tensor(img_container.scores)
             #plot_img_with_boxes(config, np.transpose(giwaxs_img[0], (1,2,0)), scores, pred_boxes, config.OUTPUT_FOLDER, i)
             #plot_imgs([np.transpose(giwaxs_img[0], (1,2,0))],config.OUTPUT_FOLDER, i)
 
@@ -82,7 +78,7 @@ def eval_on_dataset(config, prepro_func, img_processing, postpro_func=standard_p
         scores = scores[idx_elong]
         pred_boxes = pred_boxes[idx_elong]
 
-
+        logging.info('evaluating img nr ' + str(i))
         evaluator.get_exp_metrics(pred_boxes, scores, gt_boxes, confidences)
 
     if export_path is not None:

@@ -6,17 +6,7 @@ dependencies:
   - cpuonly
   - python=3.9
   - pip
-  - appdirs
-  - h5py
-  - matplotlib
-  - numpy
-  - opencv
-  - onnxruntime
-  - pandas
   - pytorch=2.5.1
-  - pyyaml
-  - scipy
-  - tifffile
   - torchvision=0.20.1
 
   - pip:

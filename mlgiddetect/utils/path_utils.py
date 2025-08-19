@@ -7,7 +7,7 @@ import ssl
 import appdirs
 
 MODEL_URLS = {
-    'rfdetrlarge.onnx': '',
+    'rfdetrlarge': 'https://huggingface.co/mlgid-project/mlgidDETECTrfdetrlarge/resolve/main/model.onnx?download=true',
     'rfdetrbase': 'https://huggingface.co/mlgid-project/mlgidDETECTrfdetrbase/resolve/main/model.onnx?download=true',
     'frcnn': 'https://huggingface.co/mlgid-project/mlgidDETECTfrcnn/resolve/main/model.onnx?download=true'
 }
@@ -90,7 +90,7 @@ def download(config, model_name: str = None,  source: str = None, destination: s
 def get_model_path(config, model_name: str = 'faster_rcnn.onnx') -> Path:
     
     if config.MODEL_TYPE == 'detr':
-        model_name = 'rfdetrbase'
+        model_name = 'rfdetrlarge'
     if config.MODEL_TYPE == 'faster_rcnn':
         model_name = 'frcnn'
     data_dir = get_data_dir()
