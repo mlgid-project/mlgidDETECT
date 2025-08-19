@@ -66,3 +66,11 @@ class ImageContainer:
     def __post_init__(self):
         if self.config is not None:
             self.polar_img_shape: tuple = self.config.PREPROCESSING_POLAR_SHAPE
+
+    def from_pygid(self, config, raw_reciprocal_img, q_z, q_xy, i):
+        self.config = config
+        self.raw_reciprocal = raw_reciprocal_img
+        self.q_z = q_z
+        self.q_xy = q_xy
+        self.nr = i
+        return self
