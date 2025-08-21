@@ -28,7 +28,7 @@ class Inference:
 
         if preferred_providers[0] == 'CUDAExecutionProvider':
             logging.info("Using the GPU for inference")
-
+            sess_options.intra_op_num_threads = 1
         self.sess = rt.InferenceSession(model_path, providers=preferred_providers, sess_options=sess_options)
 
     def infer(self, img_container: ImageContainer):
@@ -40,7 +40,7 @@ class Inference:
         except rt.capi.onnxruntime_pybind11_state.RuntimeException as e:
             error_message = str(e)
             if "Failed to allocate memory" in error_message or "BFCArena::AllocateRawInternal" in error_message:
-                logging.error("GPU memory allocation failed. Consider using CPU execution.")
+                logging.error("GPU memory allocation failed. Consider using CPU execution with the option FORCE_CPU = True")
                 # Optionally, re-raise or handle gracefully
                 raise MemoryError("GPU memory exhausted during inference.") from e
             else:

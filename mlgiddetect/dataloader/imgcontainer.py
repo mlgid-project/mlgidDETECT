@@ -73,4 +73,6 @@ class ImageContainer:
         self.q_z = q_z
         self.q_xy = q_xy
         self.nr = i
+        self.config.GEO_RECIPROCAL_SHAPE = list(raw_reciprocal_img.shape)
+        self.config.GEO_PIXELPERANGSTROEM = config.GEO_RECIPROCAL_SHAPE[0] / q_z
         return self

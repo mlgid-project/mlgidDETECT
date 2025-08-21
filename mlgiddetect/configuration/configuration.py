@@ -80,10 +80,10 @@ class Config:
             except ImportError:
                 self.PREPROCESSING_CUDA = False
                 logging.info("Cupy not installed, fallback to CPU!")
-                logging.info("CUDA support not available. Use the script 'setup_cuda.py' to install it")
+                logging.info("CUDA support for preprocessing not available. Use the script 'setup_cuda.py' to install it.\n The inference might still run on the GPU though.")
         elif self.PREPROCESSING_CUDA:
             self.PREPROCESSING_CUDA = False
-            logging.info("CUDA support not available. Use the script 'setup_cuda.py' to install it")
+            logging.info("CUDA support for preprocessing not available. Use the script 'setup_cuda.py' to install it.\n The inference might still run on the GPU though.")
         else:
             self.PREPROCESSING_CUDA = False
 
