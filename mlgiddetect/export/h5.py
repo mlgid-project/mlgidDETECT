@@ -22,12 +22,24 @@ def export_to_h5_deprecated(config: Config, img, reciprocal_boxes: np.array, sco
 def export_pygid_h5(config: Config, img_container):
 
     if img_container.config.INPUT_IMGPATH:
-        filename = Path(img_container.config.OUTPUT_FOLDER) / Path(img_container.config.INPUT_IMGPATH).name
+        filename = Path(img_container.config.OUTPUT_FOLDER) / (Path(img_container.config.INPUT_IMGPATH).stem + '.h5')
     else:
         filename = Path(img_container.config.OUTPUT_FOLDER) / "detection_results.h5"
 
+    #append a numbering if file already exists:
+    filename = next(filename.with_name(f"{filename.stem}_{i}{filename.suffix}") for i in range(1000) if not filename.with_name(f"{filename.stem}_{i}{filename.suffix}").exists())
+
     with File(filename, 'a') as f:
-        source_path = f'{img_container.h5_group}/data/analysis/frame' +  str(img_container.nr).zfill(5) +'/'
+        source_path = f'{filename.stem}/data/analysis/frame' +  str(img_container.nr).zfill(5) +'/'
+        data_group = f.create_group(f'{filename.stem}/data/')
+        data_group.create_dataset('img_gid_q', data=img_container.raw_reciprocal[np.newaxis,:,:,])
+        
+        height, width = img_container.raw_reciprocal.shape
+        q_z_value = img_container.q_z if img_container.q_z is not None else 2.7
+        data_group.create_dataset('q_z', data=np.linspace(0, q_z_value, width))
+        q_xy_value = img_container.q_xy if img_container.q_xy is not None else 2.7
+        data_group.create_dataset('q_xy', data=np.linspace(0, q_xy_value, height))
+
         group = f.create_group(source_path)
         results_struct = np.zeros(len(img_container.radius_width), dtype=pygid_results_dtype)
         results_struct['amplitude'] = [0] * len(img_container.radius_width)
