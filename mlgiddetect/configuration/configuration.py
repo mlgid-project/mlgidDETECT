@@ -34,6 +34,8 @@ class Config:
         self.PREPROCESSING_NO_CONTRASTCORRECTION = False
         self.OUTPUT_FOLDER = './outputs/'
         self.OUTPUT_H5PATH = None
+        self.POSTPROCESSING_SCORELIMIT_PEAKS = .95
+        self.POSTPROCESSING_SCORELIMIT_RINGS = .82
 
 
     def load_config(self):

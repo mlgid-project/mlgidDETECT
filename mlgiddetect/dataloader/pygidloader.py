@@ -180,7 +180,7 @@ def get_results_array(img_container):
     results_array['A'] = [0] * len(img_container.radius_width)
     results_array['B'] = [0] * len(img_container.radius_width)
     results_array['C'] = [0] * len(img_container.radius_width)
-    results_array['is_ring'] = [0] * len(img_container.radius_width)
+    results_array['is_ring'] = img_container.is_ring
     results_array['is_cut_qz'] = [0] * len(img_container.radius_width)
     results_array['is_cut_qxy'] = [0] * len(img_container.radius_width)
     results_array['visibility'] = [0] * len(img_container.radius_width)

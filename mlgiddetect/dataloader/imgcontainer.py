@@ -62,6 +62,7 @@ class ImageContainer:
     angle_width = None
     reciprocal_labels: Labels = field(default_factory=Labels)
     polar_labels: Labels = field(default_factory=Labels)
+    is_ring: np.array = None
 
     def __post_init__(self):
         if self.config is not None:

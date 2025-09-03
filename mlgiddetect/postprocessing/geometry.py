@@ -1,5 +1,6 @@
 import numpy as np
 from mlgiddetect.configuration import Config
+import torch
 
 def polar_to_q(config: Config, radii: np.array, angles: np.array, q_max: float):
     """
@@ -17,6 +18,9 @@ def polar_to_q(config: Config, radii: np.array, angles: np.array, q_max: float):
     #returns boxes in xy and z in Q-space
     radius_q = (radii/config.PREPROCESSING_POLAR_SHAPE[1]) * q_max
     angle_rad = np.deg2rad((angles / config.PREPROCESSING_POLAR_SHAPE[0]) * 90)
+    if config.PREPROCESSING_QUAZIPOLAR:
+        angle_rad = np.deg2rad((angles / config.PREPROCESSING_POLAR_SHAPE[0] * q_max/radius_q * 90))*.60#0.619047619
+
     return radius_q * np.cos(angle_rad), radius_q * np.sin(angle_rad)    
 
 def boxes_polar_to_reciprocal(config: Config, polar_boxes: np.array, q_max: float = 2.5):
@@ -39,7 +43,7 @@ def boxes_polar_to_reciprocal(config: Config, polar_boxes: np.array, q_max: floa
     for i in polar_to_q(config, polar_boxes[:,2], polar_boxes[:,3], q_max=q_max): reciprocal_boxes.append(i)
     return np.array(reciprocal_boxes).T
 
-def boxes_reciprocal_q_to_xy(img_container, reciprocal_q_boxes: np.array):
+def boxes_reciprocal_q_to_xy(config, img_container, reciprocal_q_boxes: np.array):
     """
     Convert reciprocal space coordinates to real space coordinates.
 

@@ -34,7 +34,7 @@ def standard_preprocessing(config, raw_reciprocal_img: np.array, counter = None)
     if config.MODEL_TYPE == 'detr':
         equalized_polar = grayscale_to_color(equalized_polar)
         equalized_polar = equalized_polar[:,:,:,:]
-        equalized_polar = np.pad(equalized_polar, ((0,0),(0,0,),(0,496), (0,0)))
+        equalized_polar = np.pad(equalized_polar, ((0,0),(0,0,),(0,832), (0,0)))
 
     if config.PREPROCESSING_CUDA:
         equalized_polar = cp.asnumpy(equalized_polar)

@@ -11,7 +11,7 @@ from mlgiddetect.preprocessing import standard_preprocessing
 from mlgiddetect.postprocessing import standard_postprocessing
 from mlgiddetect.dataloader import load_img_from_disk, PyGIDDataset, H5GIWAXSDataset
 from mlgiddetect.evaluation import eval_on_dataset
-from mlgiddetect.export import plot_img_with_boxes
+from mlgiddetect.export import plot_img_with_boxes, export_pygid_h5
 
 logging.basicConfig(level=logging.INFO, format='%(message)s')
 
@@ -56,3 +56,4 @@ if __name__ == '__main__':
         raw_results = imp.infer(img_container)
         img_container = standard_postprocessing(img_container, raw_results)
         plot_img_with_boxes(config, np.transpose(img_container.converted_polar_image[0], (1,2,0)), img_container.scores[img_container.scores>.8], img_container.boxes[img_container.scores>.8], config.OUTPUT_FOLDER, name='testoutput')
+        export_pygid_h5(config, img_container=img_container)
