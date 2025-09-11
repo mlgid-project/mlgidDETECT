@@ -46,6 +46,31 @@ def clahe_func(img, limit: float = DEFAULT_CLAHE_LIMIT):
 
     return cv2.createCLAHE(clipLimit=limit, tileGridSize=(1, 1)).apply(img.astype('uint16')).astype(np.float32)
 
+def equalize_hist(config, img):
+
+    if config.PREPROCESSING_CUDA:
+        xp = cp
+    else:
+        xp = np
+    # Ensure the image is in uint8 format
+    img = img.astype(xp.uint8)
+
+    # Compute histogram
+    hist, bins = xp.histogram(img.flatten(), 256, [0,256])
+
+    # Compute cumulative distribution function (CDF)
+    cdf = hist.cumsum()
+    cdf_masked = xp.ma.masked_equal(cdf, 0)  # Mask zeros to avoid division by zero
+
+    # Normalize the CDF
+    cdf_min = cdf_masked.min()
+    cdf_max = cdf_masked.max()
+    cdf_normalized = (cdf_masked - cdf_min) * 255 / (cdf_max - cdf_min)
+    cdf_final = xp.ma.filled(cdf_normalized, 0).astype(xp.uint8)
+
+    # Map the original image pixels through the equalized CDF
+    return cdf_final[img]
+
 def gaussian(x, amplitude, mean, stddev):
     return amplitude * np.exp(-((x - mean) / stddev) ** 2 / 2)
 
@@ -93,7 +118,7 @@ def _contrast_correction(
             img = cv2.cuda.equalizeHist(img)
             img = cp_array_from_cv_cuda_gpumat(img)
         else:
-            img = cv2.equalizeHist(img.astype(xp.uint8))
+            img = equalize_hist(config, img.astype(xp.uint8))
 
         img = img /255
         img = img.astype(xp.float32)
