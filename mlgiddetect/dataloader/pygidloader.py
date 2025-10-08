@@ -7,16 +7,15 @@
         img_container.boxes = boxes
         dataset.export_pygid(img_container)
     dataset.close()"""
-from dataclasses import dataclass, field
 import sys
-from typing import Tuple
-from multiprocessing import Process, Queue, Value, Lock
-from typing import Iterator
+import math
 import logging
 import numpy as np
 import cv2 as cv
-from h5py import File, Group, Dataset
-from mlgiddetect.preprocessing import contrast_correction
+from dataclasses import dataclass, field
+from typing import Tuple
+from multiprocessing import Process, Queue, Lock
+from h5py import File, Group
 from mlgiddetect.dataloader import ImageContainer
 
 
@@ -52,8 +51,6 @@ class PyGIDDataset():
     path: str = None
     preprocess_func: callable = None
     file_group: Group = None
-    #min confidence of loaded boxes
-    min_confidence: float = None
     #shape of the desired polar images
     polar_img_shape: tuple = DEFAULT_POLAR_SHAPE
     load_worker: Process = None
@@ -85,6 +82,48 @@ class PyGIDDataset():
             return queue_object
         else:
             raise StopIteration
+    
+    def reciprocal_peaks_to_polar_boxes(self, img: ImageContainer) -> None:
+        """Calculates the coordinates of the boxes in the polar coordinates
+
+        Args:
+            img (GIWAXSImage): ImageObject of GIWAXS image
+        """
+        polar_shape = self.polar_img_shape
+        reciprocal_labels = img.reciprocal_labels
+        polar_labels = img.polar_labels
+
+        img.radius = img.radius/math.sqrt(img.q_xy**2+img.q_z**2)
+        img.radius_width = img.radius_width/math.sqrt(img.q_xy**2+img.q_z**2)
+
+        r_scale = polar_shape[1] 
+        a_scale = polar_shape[0] / 90
+
+        radii = img.radius * r_scale
+        widths = img.radius_width  * r_scale / 2
+        angles = img.angle * a_scale
+        angles_std = img.angle_width * a_scale / 2
+
+        boxes = np.stack([
+            radii - widths, angles - angles_std, radii + widths, angles + angles_std
+        ], -1)
+
+        if  self.config.PREPROCESSING_QUAZIPOLAR:
+            rs = ((boxes[:, 0] + boxes[:, 2]) / 2) / polar_shape[1]
+
+            coef = 0.6 / (1e-4 + rs)
+
+            boxes[:, 1::2] /= coef[:, None]
+        
+        polar_labels.boxes = boxes
+        polar_labels.radii = radii
+        polar_labels.widths = widths
+        polar_labels.angles = angles
+        polar_labels.angles_std = angles_std
+        polar_labels.confidences = reciprocal_labels.confidences
+        polar_labels.intensities = reciprocal_labels.intensities
+        polar_labels.img_nr = reciprocal_labels.img_nr
+        polar_labels.img_name = reciprocal_labels.img_name
 
     def export_pygid(self, img_container: ImageContainer):
         self.write_queue.put(img_container)
@@ -131,21 +170,23 @@ def load_worker(data_loader: PyGIDDataset):
         for i in img_nrs:
             img_container = ImageContainer()
             img_container.config = data_loader.config
+            img_container.polar_img_shape = data_loader.polar_img_shape
             data_loader.file_locked.acquire()
             f = File(data_loader.path, 'r')
             group = f[key]
-            raw_img = group['data/img_gid_q'][i]
+            img_container.raw_reciprocal = np.nan_to_num(group['data/img_gid_q'][i])
             img_container.h5_group = group.name
             img_container.q_z = group['data/q_z'][-1]
             img_container.q_xy = group['data/q_xy'][-1]
+            if key + '/data/analysis/' + 'frame' + str(i).zfill(5) + '/fitted_peaks/' in f:
+                fill_from_fitted_peaks(img_container, group['data/analysis/' + 'frame' + str(i).zfill(5) + '/fitted_peaks'])
+                data_loader.reciprocal_peaks_to_polar_boxes(img_container)        
             f.close()
             data_loader.file_locked.release()               
             img_container.nr = i
-            img_container.raw_reciprocal = np.nan_to_num(raw_img)
             img_container.converted_polar_image, img_container.raw_polar_image, img_container.converted_mask = data_loader.preprocess_func(data_loader.config, img_container.raw_reciprocal, counter)
             data_loader.read_queue.put(img_container)
     data_loader.read_queue.put(None)
-
 
 pygid_results_dtype = np.dtype([
         ('amplitude', 'f4'),
@@ -166,6 +207,17 @@ pygid_results_dtype = np.dtype([
         ('visibility', 'i4'),
         ('id', 'i4'),
     ])
+
+def fill_from_fitted_peaks(img_container, results_array):
+    img_container.angle = results_array['angle']
+    img_container.angle_width = results_array['angle_width']
+    img_container.radius = results_array['radius']
+    img_container.radius_width = results_array['radius_width']
+    img_container.qzqxyboxes = [results_array['q_z'],results_array['q_xy']]
+    img_container.is_ring = results_array['is_ring']
+    img_container.scores = results_array['score']
+    img_container.reciprocal_labels.confidences = results_array['visibility']
+    return img_container
 
 def get_results_array(img_container):
     results_array = np.zeros(len(img_container.radius_width), dtype=pygid_results_dtype)
@@ -207,17 +259,9 @@ def write_worker(data_loader: PyGIDDataset):
         data_loader.file_locked.acquire()
         f = File(data_loader.path, 'a')
         try:
-            if source_path not in f:
-                try:
-                    group = f.create_group(source_path)
-                except:
-                    data_loader.file_locked.release()
-                    continue
-            else:
-                group = f[source_path]
-                for name in list(group.keys()):
-                    if isinstance(group[name], Dataset):
-                        del group[name]
+            group = f.require_group(source_path)
+            if source_path + '/detected_peaks'  in f:
+                del group['detected_peaks']
 
             results_array = get_results_array(img_container)
             group.create_dataset('detected_peaks', data=results_array, dtype=pygid_results_dtype)

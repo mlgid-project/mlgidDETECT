@@ -24,9 +24,9 @@ def _df_from_idx(
     res = {
         'fp': [fp_nums[idx]],
         'recall_total': [recalls[idx]],
-        'recall_high': [recalls_levels[1.][idx]],
-        'recall_medium': [recalls_levels[0.5][idx]],
-        'recall_low': [recalls_levels[np.float32(0.1)][idx]],
+        'recall_high': [recalls_levels[3.][idx]],
+        'recall_medium': [recalls_levels[2][idx]],
+        'recall_low': [recalls_levels[1][idx]],
         'min_score': [scores[idx]],
     }
     
@@ -195,9 +195,9 @@ def get_full_conf_results(exp_metrics, name: str = 'exp metrics', max_fp: float 
     ) = recall_precision_curve_with_intensities(exp_metrics)
     
     df_ap = pd.DataFrame(data={
-        'ap_high': _get_av_precision(recalls_levels[1.], precisions),
-        'ap_med': _get_av_precision(recalls_levels[0.5], precisions),
-        'ap_low': _get_av_precision(recalls_levels[np.float32(0.1)], precisions),
+        'ap_high': _get_av_precision(recalls_levels[3.], precisions),
+        'ap_med': _get_av_precision(recalls_levels[2], precisions),
+        'ap_low': _get_av_precision(recalls_levels[1], precisions),
         'ap_total': av_precision,
     }, index=[name])
         

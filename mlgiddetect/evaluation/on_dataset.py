@@ -1,17 +1,14 @@
+import sys
 import logging
-from mlgiddetect.dataloader import H5GIWAXSDataset
+from mlgiddetect.dataloader import PyGIDDataset
 from mlgiddetect.evaluation import Evaluator, get_full_conf_results
-from mlgiddetect.export import plot_img_with_boxes, write_logs, write_single_log
+from mlgiddetect.export import write_logs, write_single_log
 from mlgiddetect.utils import open_pkl_file
 from mlgiddetect.postprocessing import SmallQFilter, standard_postprocessing
-import numpy as np
 import pickle
-import torch
 from torch import Tensor
 from torchvision.ops import nms
-from torchvision.utils import save_image
 from mlgiddetect.utils import open_pkl_file
-from matplotlib import pyplot as plt
 
 postprocessing =  SmallQFilter(50)
 
@@ -26,7 +23,7 @@ def eval_on_dataset(config, prepro_func, img_processing, postpro_func=standard_p
         if config.INPUT_DATASET.endswith(('pkl','pickle','p')):
             dataset = open_pkl_file(config.INPUT_DATASET)
         else:
-            dataset = H5GIWAXSDataset(config, config.INPUT_DATASET, preprocess_func=prepro_func, buffer_size=5)
+            dataset = PyGIDDataset(config, config.INPUT_DATASET, preprocess_func=prepro_func, buffer_size=5)
 
         #save dataset
         """ ds = list(dataset)
@@ -49,6 +46,9 @@ def eval_on_dataset(config, prepro_func, img_processing, postpro_func=standard_p
         giwaxs_img = img_container.converted_polar_image
         labels = img_container.polar_labels
         confidences = img_container.polar_labels.confidences
+        if len(img_container.polar_labels.boxes) == 0:
+            logging.error('Input dataset has no labels, stopping evaluation!')
+            sys.exit()
         gt_boxes = Tensor(labels.boxes)
 
         if postpro_func:
@@ -87,7 +87,7 @@ def eval_on_dataset(config, prepro_func, img_processing, postpro_func=standard_p
 
 
 
-        
+
     df1, df2 = get_full_conf_results(evaluator.metrics)
 
     print('------evaluation------')

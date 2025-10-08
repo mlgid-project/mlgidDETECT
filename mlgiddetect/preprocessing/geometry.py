@@ -1,4 +1,5 @@
 import sys
+import math
 import logging
 from typing import Tuple
 import numpy as np
@@ -159,3 +160,46 @@ def preprocess_geometry(config, raw_reciprocal_img: np.array):
         return calc_quazipolar_image(config, raw_reciprocal_img, polar_shape=config.PREPROCESSING_POLAR_SHAPE)
     else:
         return calc_polar_image(config, raw_reciprocal_img, polar_shape=config.PREPROCESSING_POLAR_SHAPE)
+    
+def reciprocal_peaks_to_polar_boxes(img_container) -> None:
+    """Calculates the coordinates of the boxes in the polar coordinates
+
+    Args:
+        img (GIWAXSImage): ImageObject of GIWAXS image
+    """
+    polar_shape = img_container.polar_img_shape
+    reciprocal_labels = img_container.reciprocal_labels
+    polar_labels = img_container.polar_labels
+
+    #max_radius = np.sqrt((np.array(img.raw_reciprocal.shape) ** 2).sum())
+    img_container.radius = img_container.radius/math.sqrt(img_container.q_xy**2+img_container.q_z**2)
+    img_container.radius_width = img_container.radius_width/math.sqrt(img_container.q_xy**2+img_container.q_z**2)
+
+    r_scale = polar_shape[1] 
+    a_scale = polar_shape[0] / 90
+
+    radii = img_container.radius * r_scale
+    widths = img_container.radius_width  * r_scale / 2
+    angles = img_container.angle * a_scale
+    angles_std = img_container.angle_width * a_scale / 2
+
+    boxes = np.stack([
+        radii - widths, angles - angles_std, radii + widths, angles + angles_std
+    ], -1)
+
+    if  img_container.config.PREPROCESSING_QUAZIPOLAR:
+        rs = ((boxes[:, 0] + boxes[:, 2]) / 2) / polar_shape[1]
+
+        coef = 0.6 / (1e-4 + rs)
+
+        boxes[:, 1::2] /= coef[:, None]
+    
+    polar_labels.boxes = boxes
+    polar_labels.radii = radii
+    polar_labels.widths = widths
+    polar_labels.angles = angles
+    polar_labels.angles_std = angles_std
+    polar_labels.confidences = reciprocal_labels.confidences
+    polar_labels.intensities = reciprocal_labels.intensities
+    polar_labels.img_nr = reciprocal_labels.img_nr
+    polar_labels.img_name = reciprocal_labels.img_name

@@ -20,9 +20,7 @@ def standard_postprocessing(img_container, raw_results):
         img_container.is_ring = (scores_rings > config.POSTPROCESSING_SCORELIMIT_RINGS)[to_keep]
         boxes = raw_results[0][0]
         boxes = boxes[to_keep]
-        boxes = rescale_bboxes(config,torch.tensor(boxes))
-        img_container.boxes = boxes     
-
+        img_container.boxes = rescale_bboxes(config,torch.tensor(boxes))
     if config.MODEL_TYPE == 'faster_rcnn':
         postprocessing = (
                 SmallQFilter(50) +

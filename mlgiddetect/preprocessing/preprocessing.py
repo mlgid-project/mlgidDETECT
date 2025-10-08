@@ -1,7 +1,5 @@
-import sys
 import numpy as np
 import cv2
-import logging
 
 try:
     import cupy as cp
