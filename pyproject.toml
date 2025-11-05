@@ -22,7 +22,7 @@ dependencies = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["mlgiddetect"]
+include = ["mlgiddetect*"]
 
 
 [project.scripts]
