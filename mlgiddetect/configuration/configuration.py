@@ -20,7 +20,7 @@ class Config:
         self.MODEL_ONNX_PATH = None
         self.MODEL_REDOWNLOAD = False
         self.MODEL_TYPE = 'faster_rcnn'
-        self.MODEL_FORCE_CPU: False
+        self.MODEL_FORCE_CPU = False
         self.INPUT_IMGPATH = None
         self.INPUT_DATASET = None
         self.INPUT_LABELED = True
