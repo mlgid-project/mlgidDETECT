@@ -32,6 +32,7 @@ class Config:
         self.PREPROCESSING_FLIPHORIZONTAL = False
         self.PREPROCESSING_POLAR_CONVERSION = True
         self.PREPROCESSING_NO_CONTRASTCORRECTION = False
+        self.PREPROCESSING_POLAR_SHAPE = [512,1024]
         self.OUTPUT_FOLDER = './outputs/'
         self.OUTPUT_H5PATH = None
         self.POSTPROCESSING_SCORELIMIT_PEAKS = .95
