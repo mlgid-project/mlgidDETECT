@@ -6,8 +6,7 @@ try:
 except ImportError:
     cp = None  # CuPy not available
 
-from mlgiddetect.preprocessing import (preprocess_geometry, contrast_correction, add_batch_and_color_channel,
-                                        grayscale_to_color)
+from mlgiddetect.preprocessing import (preprocess_geometry, contrast_correction, add_batch_and_color_channel)
 
 def standard_preprocessing(config, raw_reciprocal_img: np.array, counter = None):
 
@@ -30,9 +29,8 @@ def standard_preprocessing(config, raw_reciprocal_img: np.array, counter = None)
 
     #reshape for detr model
     if config.MODEL_TYPE == 'detr':
-        equalized_polar = grayscale_to_color(equalized_polar)
         equalized_polar = equalized_polar[:,:,:,:]
-        equalized_polar = np.pad(equalized_polar, ((0,0),(0,0,),(0,832), (0,0)))
+        equalized_polar = np.pad(equalized_polar, ((0,0),(0,0,),(128,128), (0,0)))
 
     if config.PREPROCESSING_CUDA:
         equalized_polar = cp.asnumpy(equalized_polar)

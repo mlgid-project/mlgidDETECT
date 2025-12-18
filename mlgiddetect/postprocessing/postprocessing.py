@@ -3,6 +3,7 @@ import torch
 import numpy as np
 
 from mlgiddetect.postprocessing import rescale_bboxes, boxes_polar_to_reciprocal, boxes_reciprocal_q_to_xy, SmallQFilter, MergeBoxesPostprocessing, StandardPostprocessing, polar_to_cartesian
+from torchvision.ops import nms
 
 def standard_postprocessing(img_container, raw_results):
     if raw_results[0].size == 0:
@@ -11,16 +12,20 @@ def standard_postprocessing(img_container, raw_results):
 
     config = img_container.config
     if config.MODEL_TYPE == 'detr':
-        img_container.scores = torch.tensor(raw_results[1][0]).softmax(-1)[:,1].numpy()
+        img_container.scores = raw_results[0][0]
+        img_container.is_ring = raw_results[1][0] == 2
+        img_container.boxes = rescale_bboxes(config,torch.tensor(raw_results[2][0]))
 
-        scores_rings = torch.tensor(raw_results[1][0]).softmax(-1)[:,2].numpy()
-        scores_peaks = torch.tensor(raw_results[1][0]).softmax(-1)[:,1].numpy()
-        to_keep = np.logical_or(scores_rings > config.POSTPROCESSING_SCORELIMIT_RINGS ,scores_peaks > config.POSTPROCESSING_SCORELIMIT_PEAKS )
-        img_container.scores = np.maximum(scores_rings , scores_peaks)[to_keep]
-        img_container.is_ring = (scores_rings > config.POSTPROCESSING_SCORELIMIT_RINGS)[to_keep]
-        boxes = raw_results[0][0]
-        boxes = boxes[to_keep]
-        img_container.boxes = rescale_bboxes(config,torch.tensor(boxes))
+        topk = torch.topk(torch.tensor(img_container.scores), k=min(150, img_container.scores.size))
+        img_container.boxes = img_container.boxes[topk.indices]
+        img_container.scores = img_container.scores[topk.indices]
+        img_container.is_ring =img_container.is_ring[topk.indices]
+
+        idx_keep = nms(torch.tensor(img_container.boxes), torch.tensor(img_container.scores), 0.3)
+        img_container.boxes = img_container.boxes[idx_keep]
+        img_container.scores = img_container.scores[idx_keep]
+        img_container.is_ring =img_container.is_ring[idx_keep]
+
     if config.MODEL_TYPE == 'faster_rcnn':
         postprocessing = (
                 SmallQFilter(50) +

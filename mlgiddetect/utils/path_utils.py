@@ -90,7 +90,7 @@ def download(config, model_name: str = None,  source: str = None, destination: s
 def get_model_path(config, model_name: str = 'faster_rcnn.onnx') -> Path:
     
     if config.MODEL_TYPE == 'detr':
-        model_name = 'rfdetrbase'
+        model_name = 'dino'
     if config.MODEL_TYPE == 'faster_rcnn':
         model_name = 'frcnn'
     data_dir = get_data_dir()

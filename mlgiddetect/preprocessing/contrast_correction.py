@@ -94,40 +94,61 @@ def _contrast_correction(
     if config is not None:
         linear_normalization = config.PREPROCESSING_LINEAR_CONTRAST
         linear_perc_997 = config.PREPROCESSING_LINEAR_PERC_977
+        log = config.PREPROCESSING_LOGARITHM
+        clahe = not config.PREPROCESSING_LINEAR_CONTRAST
         if config.PREPROCESSING_NO_CONTRASTCORRECTION:
             linear_normalization = False
             log = False
             clahe = False
 
+    clahe = True
+    log = True
+    linear_normalization = False
     mask = ~xp.isnan(img) & (img != 0)
 
-    if linear_normalization:
-        if linear_perc_997:
-            upper_clip_limit = xp.percentile(img[mask],97.0)
-        else:
-            upper_clip_limit = xp.percentile(img[mask],99.9)
-
-        lower_clip_limit = xp.percentile(img[mask],5)
-
-        img[mask] = xp.clip(img[mask], lower_clip_limit, upper_clip_limit)
-        img[mask] =  normalize(img, mask)
-        img = img *255
-
-        if config.PREPROCESSING_CUDA:
-            img = cv_cuda_gpumat_from_cp_array(img.astype(xp.uint8))
-            img = cv2.cuda.equalizeHist(img)
-            img = cp_array_from_cv_cuda_gpumat(img)
-        else:
-            img = equalize_hist(config, img.astype(xp.uint8))
-
-        img = img /255
-        img = img.astype(xp.float32)
-        img[~mask] = 0
-        return img, mask
-
     if log:
+        img = np.nan_to_num(img)        
+        img = xp.log(img+1)
+        img = xp.log(img+1)
         img[mask] =  normalize(img, mask)
-        img = xp.log10(img * coef + 1)
+        #return img.astype(np.float32), mask
+
+    if linear_normalization:
+        # Ensure float32
+        img = img.astype(np.float32)
+
+        #if linear_perc_997:
+            # Percentile clipping
+        upper_clip_limit = np.percentile(img[mask], 80.0 if linear_perc_997 else 99)
+        lower_clip_limit = np.percentile(img[mask], 5.0)
+
+        # Clip and normalize
+        img[mask] = np.clip(img[mask], lower_clip_limit, upper_clip_limit)
+        img[mask] = (img[mask] - lower_clip_limit) / (upper_clip_limit - lower_clip_limit)
+        #img[mask] = np.clip(img[mask], 0, 1)
+
+        ###############
+        img = np.nan_to_num(img)        
+        #img = xp.log(img+1)
+        img[mask] =  normalize(img, mask)
+        img[~mask] = 0.0
+        #return img.astype(np.float32), mask
+        ########
+
+        # Histogram equalization (float32 version)
+        hist, bins = np.histogram(img[mask], bins=256, range=(0.0, 1.0))
+        cdf = hist.cumsum()
+        cdf = cdf / cdf[-1]  # Normalize to [0,1]
+
+        # Create LUT and apply
+        bin_centers = (bins[:-1] + bins[1:]) / 2
+        lut = np.interp(img[mask], bin_centers, cdf)
+        img[mask] = lut
+
+        # Final scaling and cleanup
+        img[~mask] = 0.0
+        return img.astype(np.float32), mask
+
 
     if clahe:
         img = clahe_func(img * coef, limit)

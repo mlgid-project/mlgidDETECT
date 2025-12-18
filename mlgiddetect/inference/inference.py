@@ -13,7 +13,6 @@ class Inference:
         if model_path is None:
             logging.error('could not get model file. Exiting')
             sys.exit()
-
         sess_options = rt.SessionOptions()
         sess_options.log_severity_level = 3
         logging.info("Loading model")
@@ -28,7 +27,7 @@ class Inference:
 
         if preferred_providers[0] == 'CUDAExecutionProvider':
             logging.info("Using the GPU for inference")
-            sess_options.intra_op_num_threads = 1
+
         self.sess = rt.InferenceSession(model_path, providers=preferred_providers, sess_options=sess_options)
 
     def infer(self, img_container: ImageContainer):

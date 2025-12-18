@@ -80,6 +80,8 @@ def eval_on_dataset(config, prepro_func, img_processing, postpro_func=standard_p
 
         logging.info('evaluating img nr ' + str(i))
         evaluator.get_exp_metrics(pred_boxes, scores, gt_boxes, confidences)
+    
+    dataset.close()
 
     if export_path is not None:
         with open(export_path + '/object_detection_results.pkl', 'wb') as handle:
