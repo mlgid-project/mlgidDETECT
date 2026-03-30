@@ -9,7 +9,6 @@ logging.getLogger('matplotlib').setLevel(logging.WARNING)
 COLORS = [[0.000, 0.447, 0.741], [0.850, 0.325, 0.098], [0.929, 0.694, 0.125],
           [0.494, 0.184, 0.556], [0.466, 0.674, 0.188], [0.301, 0.745, 0.933]]
 
-
 def plot_img_with_boxes(config, img, scores, boxes, output_dir, epoch = None, name = None):
     if output_dir is None:
         output_dir = './output/'
@@ -32,8 +31,8 @@ def plot_img_with_boxes(config, img, scores, boxes, output_dir, epoch = None, na
             ax.text(xmin, ymin, text, fontsize=15,
                     bbox=dict(facecolor='yellow', alpha=0.5))
     plt.axis('off')
-    plt.savefig(output_dir + '/' + str(epoch) + str(name) )
-    logging.info('Saved detection output to ' + output_dir + '/' + str(epoch) + str(name))
+    plt.savefig(output_dir + '/' + str(epoch) + str(name) + ".png", bbox_inches='tight', pad_inches=0)
+    logging.info('Saved detection output to ' + output_dir + '/' + str(epoch) + str(name) + ".png")
     plt.close()
 
 def plot_imgs(pil_imgs, output_dir = None, name = None):
@@ -65,7 +64,7 @@ def plot_imgs(pil_imgs, output_dir = None, name = None):
     # Save the plot
     #plot_filename = os.path.join(output_dir, f'epoch_{epoch}.png')
 
-    plt.savefig(output_dir + '/' + str(name) + ".jpg")
+    plt.savefig(output_dir + '/' + str(name) + ".jpg", bbox_inches='tight', pad_inches=0)
     #plt.savefig(plot_filename, bbox_inches='tight')
     #plt.show()
     plt.close()

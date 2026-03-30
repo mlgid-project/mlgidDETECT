@@ -4,7 +4,6 @@ import numpy as np
 import multiprocessing as mp
 mp.set_start_method('spawn',force=True)
 
-import cv2
 from mlgiddetect.configuration import Config
 from mlgiddetect.inference import Inference
 from mlgiddetect.preprocessing import standard_preprocessing
@@ -29,15 +28,12 @@ if __name__ == '__main__':
     if args.config_file:
         config = Config(args.config_file, args)
     else:
-        config = Config('./faster_rcnn.yaml', args)
-        #config = Config('./detr.yaml',args)
-
+        config = Config('/home/testuser/mlgidDETECT/dino.yaml', args)
     if config.INPUT_DATASET:
         #evaluation on labeled dataset
         if config.INPUT_LABELED:
             imp = Inference(config)
             eval_on_dataset(config, standard_preprocessing, imp)
-
         else:
             #add detected boxes to PyGIDDataset dataset  
             dataset = PyGIDDataset(config, config.INPUT_DATASET, preprocess_func=standard_preprocessing, buffer_size=10)
@@ -55,5 +51,5 @@ if __name__ == '__main__':
         img_container.converted_polar_image, img_container.raw_polar_image, img_container.converted_mask = standard_preprocessing(config, img_container.raw_reciprocal)
         raw_results = imp.infer(img_container)
         img_container = standard_postprocessing(img_container, raw_results)
-        plot_img_with_boxes(config, np.transpose(img_container.converted_polar_image[0], (1,2,0)), img_container.scores[img_container.scores>.8], img_container.boxes[img_container.scores>.8], config.OUTPUT_FOLDER, name='testoutput')
+        plot_img_with_boxes(config, np.transpose(img_container.converted_polar_image[0], (1,2,0)), img_container.scores, img_container.boxes, config.OUTPUT_FOLDER, name='testoutput')
         export_pygid_h5(config, img_container=img_container)

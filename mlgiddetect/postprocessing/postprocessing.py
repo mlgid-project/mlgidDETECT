@@ -1,8 +1,7 @@
 import logging
 import torch
-import numpy as np
-
-from mlgiddetect.postprocessing import rescale_bboxes, boxes_polar_to_reciprocal, boxes_reciprocal_q_to_xy, SmallQFilter, MergeBoxesPostprocessing, StandardPostprocessing, polar_to_cartesian
+from mlgiddetect.postprocessing.utils import onnx_to_xyxy, filter_boxes, onnx_to_xyxy
+from mlgiddetect.postprocessing import boxes_polar_to_reciprocal, boxes_reciprocal_q_to_xy, SmallQFilter, MergeBoxesPostprocessing, StandardPostprocessing, polar_to_cartesian
 
 def standard_postprocessing(img_container, raw_results):
     if raw_results[0].size == 0:
@@ -10,18 +9,9 @@ def standard_postprocessing(img_container, raw_results):
         return img_container
 
     config = img_container.config
-    if config.MODEL_TYPE == 'detr':
-        img_container.scores = torch.tensor(raw_results[1][0]).softmax(-1)[:,1].numpy()
-
-        scores_rings = torch.tensor(raw_results[1][0]).softmax(-1)[:,2].numpy()
-        scores_peaks = torch.tensor(raw_results[1][0]).softmax(-1)[:,1].numpy()
-        to_keep = np.logical_or(scores_rings > config.POSTPROCESSING_SCORELIMIT_RINGS ,scores_peaks > config.POSTPROCESSING_SCORELIMIT_PEAKS )
-        img_container.scores = np.maximum(scores_rings , scores_peaks)[to_keep]
-        img_container.is_ring = (scores_rings > config.POSTPROCESSING_SCORELIMIT_RINGS)[to_keep]
-        boxes = raw_results[0][0]
-        boxes = boxes[to_keep]
-        boxes = rescale_bboxes(config,torch.tensor(boxes))
-        img_container.boxes = boxes     
+    if config.MODEL_TYPE == 'dino':
+        img_container = onnx_to_xyxy(config, img_container, raw_results)
+        img_container = filter_boxes(config, img_container) 
 
     if config.MODEL_TYPE == 'faster_rcnn':
         postprocessing = (
