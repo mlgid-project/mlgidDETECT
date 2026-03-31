@@ -1,4 +1,7 @@
 # mlgidDETECT
+[![Python version](https://img.shields.io/badge/python-3.9%7C3.10%7C3.11%7C3.12%7C3.13%7C3.14-blue.svg)](https://www.python.org/)
+
+This package is included in the [`mlgidBASE` package](https://github.com/mlgid-project/mlgidBASE) and can be used as part of the `mlgid` pipeline. 
 
 ## Clone repository
 * Clone with ssh (recommended)
@@ -31,11 +34,9 @@
 Set ```PREPROCESSING CUDA: True``` in the config file
 
 
-### Install with pip (not recommended)
-* Move into directory:
-``` cd mlgidDETECT```
-* Install package, recommended with option -e to install in editable mode
-```pip install -e ./```
+### Install package with pip
+* Install package \
+```pip install mlgiddetect```
 
 ## Usage
 
@@ -50,6 +51,11 @@ Set ```PREPROCESSING CUDA: True``` in the config file
 ### With a config file
 
 ```python main.py --config_file=./faster_rcnn.yaml```
+
+### Using the PyPI package
+
+Use [mlgidDETECT_tutorial.ipynb](https://github.com/mlgid-project/mlgidDETECT/blob/main/mlgidDETECT_tutorial.ipynb) to get started.
+
 
 ### GPU support with CUDA 12.X
 If a GPU is available, it is automatically used for inference.

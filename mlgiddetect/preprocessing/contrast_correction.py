@@ -57,7 +57,6 @@ def _contrast_correction(
         clahe: bool = True,
         log: bool = True,
         linear_normalization = False,
-        linear_perc_997 = False
 ):
 
     if config.PREPROCESSING_CUDA:
@@ -68,7 +67,6 @@ def _contrast_correction(
 
     if config is not None:
         linear_normalization = config.PREPROCESSING_LINEAR_CONTRAST
-        linear_perc_997 = config.PREPROCESSING_LINEAR_PERC_977
         if config.PREPROCESSING_NO_CONTRASTCORRECTION:
             linear_normalization = False
             log = False
@@ -77,11 +75,7 @@ def _contrast_correction(
     mask = ~xp.isnan(img) & (img != 0)
 
     if linear_normalization:
-        if linear_perc_997:
-            upper_clip_limit = xp.percentile(img[mask],97.0)
-        else:
-            upper_clip_limit = xp.percentile(img[mask],99.9)
-
+        upper_clip_limit = xp.percentile(img[mask],99.9)
         lower_clip_limit = xp.percentile(img[mask],5)
 
         img[mask] = xp.clip(img[mask], lower_clip_limit, upper_clip_limit)
