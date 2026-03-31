@@ -37,6 +37,7 @@ class Config:
         self.OUTPUT_H5PATH = None
         self.POSTPROCESSING_SCORE = 0.4
         self.POSTPROCESSING_NMSIOU = 0.4
+        self.POSTPROCESSING_TTA = False
 
 
     def load_config(self):
