@@ -1,5 +1,7 @@
 # mlgidDETECT
 
+This package is included in the [`mlgidBASE` package](https://github.com/mlgid-project/mlgidBASE) and can be used as part of the `mlgid` pipeline. 
+
 ## Clone repository
 * Clone with ssh (recommended)
 ```git clone git@github.com:mlgid-project/mlgidDETECT.git```
