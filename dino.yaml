@@ -20,6 +20,7 @@ PREPROCESSING:
 POSTPROCESSING:
   SCORE: 0.4 
   NMSIOU: 0.4 #non maximum suppression iou threshold
+  TTA: False #use test time augmentation for postprocessing
 
 INPUT:
   DATASET: '/home/testuser/mlgidDETECT/inputs/w4_mapbbr32.tif'

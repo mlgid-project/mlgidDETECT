@@ -2,6 +2,8 @@ import sys
 import logging
 from typing import Tuple
 import numpy as np
+import torch
+import torch.nn.functional as F
 import cv2
 try:
     import cupy as cp
@@ -10,6 +12,7 @@ except ImportError:
 
 from mlgiddetect.configuration import Config
 from mlgiddetect.utils import cv_cuda_gpumat_from_cp_array, cp_array_from_cv_cuda_gpumat
+from scipy.ndimage import gaussian_filter
 
 DEFAULT_CLAHE_LIMIT: float = 2000.
 DEFAULT_CLAHE_COEF: float = 500.
@@ -121,3 +124,15 @@ def add_batch_and_color_channel(img: np.array):
 
 def grayscale_to_color(img: np.array):
     return np.concatenate((img,)*3, axis=1)
+
+def unsharp_mask(img, sigma=1.5, strength=1.2):
+    
+    if img.ndim == 2:
+        img = img[np.newaxis, np.newaxis, :, :]
+    elif img.ndim == 3:
+        img = img[np.newaxis, :, :, :]
+    
+    blurred = gaussian_filter(img, sigma=sigma, axes=(2, 3))
+    sharpened = img + strength * (img - blurred)
+    
+    return sharpened

@@ -49,7 +49,7 @@ def eval_on_dataset(config, prepro_func, img_processing, postpro_func=standard_p
         gt_boxes = Tensor(labels.boxes)
 
         if postpro_func:
-            img_container = standard_postprocessing(img_container, img_processing.infer(img_container))
+            img_container = standard_postprocessing(img_container, img_processing.infer(img_container), img_processing)
         else:
             img_container = img_processing.infer(img_container)
         pred_boxes = img_container.boxes

@@ -41,7 +41,7 @@ if __name__ == '__main__':
             for i, img_container in enumerate(dataset):
                 logging.info("Processing image %s", i)
                 raw_results = imp.infer(img_container)
-                img_container = standard_postprocessing(img_container, raw_results)
+                img_container = standard_postprocessing(img_container, raw_results, imp)
                 dataset.export_pygid(img_container)
             dataset.close()
 
