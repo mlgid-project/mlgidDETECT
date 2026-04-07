@@ -1,9 +1,4 @@
-import sys
-import logging
-from typing import Tuple
 import numpy as np
-import torch
-import torch.nn.functional as F
 import cv2
 try:
     import cupy as cp
