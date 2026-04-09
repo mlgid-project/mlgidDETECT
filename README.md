@@ -1,4 +1,5 @@
 # mlgidDETECT
+[![Python version](https://img.shields.io/badge/python-3.9%7C3.10%7C3.11%7C3.12%7C3.13%7C3.14-blue.svg)](https://www.python.org/)
 
 This package is included in the [`mlgidBASE` package](https://github.com/mlgid-project/mlgidBASE) and can be used as part of the `mlgid` pipeline. 
 
