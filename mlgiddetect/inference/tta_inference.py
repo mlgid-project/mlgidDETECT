@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import copy
 from typing import List, Tuple
-from mlgiddetect.preprocessing.contrast_correction import unsharp_mask
+from mlgiddetect.preprocessing.contrast_correction import unsharp_mask, log_contrast
 from mlgiddetect.postprocessing.utils import filter_boxes, onnx_to_xyxy
 
 
@@ -12,7 +12,7 @@ def tta_inference(config, img_container, img_processing):
     and contrast-enhanced images using consensus.
     """
     imp = img_processing
-    img_h, img_w = img_container.converted_polar_image.shape[-2], img_container.converted_polar_image.shape[-1]
+    img_h, img_w = img_container.raw_polar_image.shape[-2], img_container.raw_polar_image.shape[-1]
     
     # Original inference results already in img_container
     original_boxes = img_container.boxes
@@ -34,11 +34,10 @@ def tta_inference(config, img_container, img_processing):
     
     # --- Contrast-enhanced augmentation ---
     img_container_contrast = copy.deepcopy(img_container)
-    img_container_contrast.converted_polar_image = unsharp_mask(
-        img_container_contrast.converted_polar_image, sigma=1.5, strength=1.2
-    )
+    img_container_contrast.raw_polar_image = log_contrast(
+        img_container_contrast.raw_polar_image)
     
-    raw_results_contrast = imp.infer(img_container_contrast)
+    raw_results_contrast = imp.infer_raw(img_container_contrast)
     img_container_contrast = onnx_to_xyxy(config, img_container_contrast, raw_results_contrast)
     img_container_contrast = filter_boxes(config, img_container_contrast)
     

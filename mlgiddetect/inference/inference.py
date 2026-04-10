@@ -46,3 +46,19 @@ class Inference:
             else:
                 # Re-raise unexpected RuntimeExceptions
                 raise
+
+    def infer_raw(self, img_container: ImageContainer):
+        # Run inference with ONNX Runtime
+        input_name = self.sess.get_inputs()[0].name
+
+        try:
+            return self.sess.run(None, {input_name: img_container.raw_polar_image.astype(np.float32)})
+        except rt.capi.onnxruntime_pybind11_state.RuntimeException as e:
+            error_message = str(e)
+            if "Failed to allocate memory" in error_message or "BFCArena::AllocateRawInternal" in error_message:
+                logging.error("GPU memory allocation failed. Consider using CPU execution with the option FORCE_CPU = True")
+                # Optionally, re-raise or handle gracefully
+                raise MemoryError("GPU memory exhausted during inference.") from e
+            else:
+                # Re-raise unexpected RuntimeExceptions
+                raise

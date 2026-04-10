@@ -131,3 +131,23 @@ def unsharp_mask(img, sigma=1.5, strength=1.2):
     sharpened = img + strength * (img - blurred)
     
     return sharpened
+
+def log_contrast(img: np.array):
+    """
+    Log intensity transform.
+
+    Args:
+        img: numpy array [H,W] or [1,H,W]
+
+    Returns:
+        log transformed tensor
+    """
+    if img.ndim == 2:
+        img = img[np.newaxis, np.newaxis, :, :]
+    elif img.ndim == 3:
+        img = img[np.newaxis, :, :, :]
+
+    eps = 1e-6
+    out = np.log1p(img + eps)
+    out = out / out.max()
+    return out

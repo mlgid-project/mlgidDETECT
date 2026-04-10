@@ -50,6 +50,6 @@ if __name__ == '__main__':
         img_container = load_img_from_disk(config)
         img_container.converted_polar_image, img_container.raw_polar_image, img_container.converted_mask = standard_preprocessing(config, img_container.raw_reciprocal)
         raw_results = imp.infer(img_container)
-        img_container = standard_postprocessing(img_container, raw_results)
+        img_container = standard_postprocessing(img_container, raw_results, imp)
         plot_img_with_boxes(config, np.transpose(img_container.converted_polar_image[0], (1,2,0)), img_container.scores, img_container.boxes, config.OUTPUT_FOLDER, name='testoutput')
         export_pygid_h5(config, img_container=img_container)
