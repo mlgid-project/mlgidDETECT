@@ -18,7 +18,7 @@ PREPROCESSING:
 POSTPROCESSING:
   SCORE: 0.4                    #minimum score for peaks
   NMSIOU: 0.4                   #non maximum suppression iou threshold
-  TTA: True                     #use test time augmentation for postprocessing
+  TTA: False                    #use test time augmentation for postprocessing
 
 INPUT:
   DATASET: '/home/testuser/mlgidDETECT/inputs/test.h5'  #pygid NeXus h5 file

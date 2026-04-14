@@ -1,7 +1,4 @@
-OUTPUT:
-  FOLDER: './outputs'
-
-  GENERAL:
+GENERAL:
   DEBUG: True                   #more verbose logging
 
 MODEL:

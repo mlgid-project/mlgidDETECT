@@ -17,7 +17,6 @@ class Config:
     
     def init_default(self):
         self.GENERAL_DEBUG = False
-        self.MODEL_ONNX_PATH = None
         self.MODEL_REDOWNLOAD = False
         self.MODEL_TYPE = 'faster_rcnn'
         self.MODEL_FORCE_CPU = False
@@ -34,7 +33,7 @@ class Config:
         self.PREPROCESSING_NO_CONTRASTCORRECTION = False
         self.PREPROCESSING_POLAR_SHAPE = [512,1024]
         self.OUTPUT_FOLDER = './outputs/'
-        self.OUTPUT_H5PATH = None
+        self.OUTPUT_IMAGEPREFIX = ''
         self.POSTPROCESSING_SCORE = 0.4
         self.POSTPROCESSING_NMSIOU = 0.4
         self.POSTPROCESSING_TTA = False
@@ -63,8 +62,6 @@ class Config:
 
 
     def load_args(self, args):
-        if args.onnx_path:
-            self.MODEL_ONNX_PATH = args.onnx_path
         if args.epoch:
             self.EVAL_EPOCH = args.epoch
         if args.output_folder:
