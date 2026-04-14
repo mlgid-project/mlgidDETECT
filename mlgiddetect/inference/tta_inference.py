@@ -36,9 +36,6 @@ def tta_inference(config, img_container, img_processing):
     all_boxes = [img_container.boxes, img_container_flipped.boxes, img_container_contrast.boxes]
     all_scores = [img_container.scores, img_container_flipped.scores, img_container_contrast.scores]
     
-    fused_boxes, fused_scores = consensus_boxes(all_boxes, all_scores, iou_thr=0.2, min_sets=2)
-    
-    img_container.boxes = fused_boxes
-    img_container.scores = fused_scores
+    img_container.boxes, img_container.scores = consensus_boxes(all_boxes, all_scores, iou_thr=0.2, min_sets=2)
     
     return img_container
