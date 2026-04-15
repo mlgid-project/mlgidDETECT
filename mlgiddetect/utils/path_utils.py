@@ -4,6 +4,8 @@ import logging
 import urllib.request
 import pickle
 import ssl
+import time
+import sys
 import appdirs
 
 MODEL_URLS = {
@@ -78,7 +80,41 @@ def download(config, model_name: str = None,  source: str = None, destination: s
         get_data_dir().mkdir(parents=True, exist_ok=True)
         logging.info(f"Starting download of model file to {destination}")
         ssl._create_default_https_context = ssl._create_unverified_context
-        urllib.request.urlretrieve(source, destination)
+
+        _download_start_time = [time.time()]
+        _last_time = [time.time()]
+        _last_count = [0]
+
+        def _progress_hook(block_num, block_size, total_size):
+            downloaded = block_num * block_size
+            if total_size > 0:
+                downloaded = min(downloaded, total_size)
+
+            now = time.time()
+            elapsed = now - _last_time[0]
+            if elapsed >= 0.5:
+                bytes_since = downloaded - _last_count[0]
+                speed = bytes_since / elapsed  # bytes/s
+                _last_time[0] = now
+                _last_count[0] = downloaded
+
+                percent = downloaded / total_size * 100
+                done = int(percent / 2)
+                bar = '#' * done + '-' * (50 - done)
+                total_mb = total_size / 1e6
+                dl_mb = downloaded / 1e6
+                speed_str = f"{speed/1e6:.2f} MB/s" if speed >= 1e5 else f"{speed/1e3:.1f} KB/s"
+                sys.stdout.write(f"\r  [{bar}] {percent:5.1f}%  {dl_mb:.1f}/{total_mb:.1f} MB  {speed_str}   ")
+                sys.stdout.flush()
+
+        urllib.request.urlretrieve(source, destination, reporthook=_progress_hook)
+        total_size = os.path.getsize(destination)
+        total_mb = total_size / 1e6
+        elapsed = time.time() - _download_start_time[0]
+        avg_speed = total_size / elapsed if elapsed > 0 else 0
+        speed_str = f"{avg_speed/1e6:.2f} MB/s" if avg_speed >= 1e5 else f"{avg_speed/1e3:.1f} KB/s"
+        sys.stdout.write(f"\r  [{'#'*50}] 100.0%  {total_mb:.1f}/{total_mb:.1f} MB  {speed_str}   \n")
+        sys.stdout.flush()
         logging.info(f"Model file downloaded successfully from {source} to {destination}")
         return destination
     

@@ -1,6 +1,3 @@
-import sys
-import logging
-from typing import Tuple
 import numpy as np
 import cv2
 try:
@@ -10,6 +7,7 @@ except ImportError:
 
 from mlgiddetect.configuration import Config
 from mlgiddetect.utils import cv_cuda_gpumat_from_cp_array, cp_array_from_cv_cuda_gpumat
+from scipy.ndimage import gaussian_filter
 
 DEFAULT_CLAHE_LIMIT: float = 2000.
 DEFAULT_CLAHE_COEF: float = 500.
@@ -115,3 +113,16 @@ def add_batch_and_color_channel(img: np.array):
 
 def grayscale_to_color(img: np.array):
     return np.concatenate((img,)*3, axis=1)
+
+def log_contrast(img_container):
+    img = img_container.raw_polar_image
+    if img.ndim == 2:
+        img = img[np.newaxis, np.newaxis, :, :]
+    elif img.ndim == 3:
+        img = img[np.newaxis, :, :, :]
+
+    eps = 1e-6
+    out = np.log1p(img + eps)
+    out = out / out.max()
+    img_container.raw_polar_image = out.astype(np.float32)
+    return img_container
