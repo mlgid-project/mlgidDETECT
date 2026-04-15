@@ -18,11 +18,11 @@ class Config:
     def init_default(self):
         self.GENERAL_DEBUG = False
         self.MODEL_REDOWNLOAD = False
-        self.MODEL_TYPE = 'faster_rcnn'
+        self.MODEL_TYPE = 'dino'
         self.MODEL_FORCE_CPU = False
         self.INPUT_IMGPATH = None
         self.INPUT_DATASET = None
-        self.INPUT_LABELED = True
+        self.INPUT_LABELED = False
         self.GEO_PIXELPERANGSTROEM = 500
         self.GEO_RECIPROCAL_SHAPE = [1501,1501]
         self.GEO_QMAX = None
@@ -31,6 +31,7 @@ class Config:
         self.PREPROCESSING_FLIPHORIZONTAL = False
         self.PREPROCESSING_POLAR_CONVERSION = True
         self.PREPROCESSING_NO_CONTRASTCORRECTION = False
+        self.PREPROCESSING_LINEAR_CONTRAST = False
         self.PREPROCESSING_POLAR_SHAPE = [512,1024]
         self.OUTPUT_FOLDER = './outputs/'
         self.OUTPUT_IMAGEPREFIX = ''
