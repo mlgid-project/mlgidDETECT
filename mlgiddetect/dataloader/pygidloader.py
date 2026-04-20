@@ -128,18 +128,24 @@ def load_worker(data_loader: PyGIDDataset):
         f.close()
         data_loader.file_locked.release()
 
-        for i in img_nrs:
+        # Batch-read all frames for this group in a single lock acquisition
+        # to avoid opening/closing the H5 file once per image.
+        data_loader.file_locked.acquire()
+        f = File(data_loader.path, 'r')
+        group = f[key]
+        all_raw_imgs = group['data/img_gid_q'][()]  # load all frames at once
+        h5_group_name = group.name
+        q_z = group['data/q_z'][-1]
+        q_xy = group['data/q_xy'][-1]
+        f.close()
+        data_loader.file_locked.release()
+
+        for i, raw_img in enumerate(all_raw_imgs):
             img_container = ImageContainer()
             img_container.config = data_loader.config
-            data_loader.file_locked.acquire()
-            f = File(data_loader.path, 'r')
-            group = f[key]
-            raw_img = group['data/img_gid_q'][i]
-            img_container.h5_group = group.name
-            img_container.q_z = group['data/q_z'][-1]
-            img_container.q_xy = group['data/q_xy'][-1]
-            f.close()
-            data_loader.file_locked.release()               
+            img_container.h5_group = h5_group_name
+            img_container.q_z = q_z
+            img_container.q_xy = q_xy
             img_container.nr = i
             img_container.raw_reciprocal = np.nan_to_num(raw_img)
             img_container.converted_polar_image, img_container.raw_polar_image, img_container.converted_mask = data_loader.preprocess_func(data_loader.config, img_container.raw_reciprocal, counter)

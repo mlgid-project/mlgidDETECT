@@ -38,7 +38,12 @@ def standard_preprocessing(config, raw_reciprocal_img: np.array, counter = None)
 
     if config.PREPROCESSING_CUDA:
         equalized_polar = cp.asnumpy(equalized_polar)
-        raw_polar_img = cp.asnumpy(raw_polar_img)
+        # raw_polar_img may be a cv2.cuda_GpuMat (output of cv2.cuda.remap);
+        # use .download() instead of cp.asnumpy() to avoid a type mismatch.
+        if hasattr(raw_polar_img, 'download'):
+            raw_polar_img = raw_polar_img.download()
+        else:
+            raw_polar_img = cp.asnumpy(raw_polar_img)
         mask = cp.asnumpy(mask)
 
     return equalized_polar, raw_polar_img, mask
