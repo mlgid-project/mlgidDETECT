@@ -6,7 +6,6 @@ from mlgiddetect.utils import open_pkl_file
 from mlgiddetect.postprocessing import SmallQFilter, standard_postprocessing
 import pickle
 from torch import Tensor
-from torchvision.ops import nms
 from mlgiddetect.utils import open_pkl_file
 
 postprocessing =  SmallQFilter(50)

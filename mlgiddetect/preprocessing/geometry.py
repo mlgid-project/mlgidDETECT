@@ -19,6 +19,11 @@ MAX_GRID_CACHE_SIZE: int = 5
 DEFAULT_BEAM_CENTER: Tuple[float, float] = (0, 0)
 DEFAULT_ALGORITHM: int = cv2.INTER_CUBIC
 
+# Module-level grid caches: key -> (map_x, map_y)
+# Grids are identical for all images of the same shape, so we compute them once.
+_polar_grid_cache: dict = {}
+_quazipolar_grid_cache: dict = {}
+
 def _set_q_max(config: Config):
     config.GEO_QMAX = np.sqrt(((config.GEO_RECIPROCAL_SHAPE[0] / config.GEO_PIXELPERANGSTROEM) ** 2) + ((config.GEO_RECIPROCAL_SHAPE[1] / config.GEO_PIXELPERANGSTROEM) ** 2))
 
@@ -32,8 +37,12 @@ def _get_quazipolar_grid(config, beam_center: Tuple[float, float] = DEFAULT_BEAM
                          coef: float = 0.6,
                          ):
 
+    use_cuda = bool(config.PREPROCESSING_CUDA)
+    cache_key = (tuple(shape), tuple(polar_shape), tuple(beam_center), coef, use_cuda)
+    if cache_key in _quazipolar_grid_cache:
+        return _quazipolar_grid_cache[cache_key]
 
-    if config.PREPROCESSING_CUDA:
+    if use_cuda:
         xp = cp
     else:
         xp = np
@@ -60,9 +69,13 @@ def _get_quazipolar_grid(config, beam_center: Tuple[float, float] = DEFAULT_BEAM
     polar_yy = r_matrix * xp.cos(p_matrix) + y0
     polar_zz = r_matrix * xp.sin(p_matrix) + z0
 
-    if config.PREPROCESSING_CUDA:
+    if use_cuda:
         polar_yy = cv_cuda_gpumat_from_cp_array(polar_yy)
         polar_zz = cv_cuda_gpumat_from_cp_array(polar_zz)
+
+    if len(_quazipolar_grid_cache) >= MAX_GRID_CACHE_SIZE:
+        _quazipolar_grid_cache.pop(next(iter(_quazipolar_grid_cache)))
+    _quazipolar_grid_cache[cache_key] = (polar_yy, polar_zz)
 
     return polar_yy, polar_zz
 
@@ -73,7 +86,12 @@ def _get_polar_grid(config,
         beam_center: Tuple[float, float],
 ):
 
-    if config.PREPROCESSING_CUDA:
+    use_cuda = bool(config.PREPROCESSING_CUDA)
+    cache_key = (tuple(img_shape), tuple(polar_shape), tuple(beam_center), use_cuda)
+    if cache_key in _polar_grid_cache:
+        return _polar_grid_cache[cache_key]
+
+    if use_cuda:
         xp = cp
     else:
         xp = np
@@ -98,10 +116,13 @@ def _get_polar_grid(config,
     polar_yy = r_matrix * xp.cos(p_matrix) + y0
     polar_zz = r_matrix * xp.sin(p_matrix) + z0
 
-    if config.PREPROCESSING_CUDA:
+    if use_cuda:
         polar_yy = cv_cuda_gpumat_from_cp_array(polar_yy)
         polar_zz = cv_cuda_gpumat_from_cp_array(polar_zz)
 
+    if len(_polar_grid_cache) >= MAX_GRID_CACHE_SIZE:
+        _polar_grid_cache.pop(next(iter(_polar_grid_cache)))
+    _polar_grid_cache[cache_key] = (polar_yy, polar_zz)
 
     return polar_yy, polar_zz
 

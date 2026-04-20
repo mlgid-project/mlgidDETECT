@@ -12,6 +12,13 @@ from scipy.ndimage import gaussian_filter
 DEFAULT_CLAHE_LIMIT: float = 2000.
 DEFAULT_CLAHE_COEF: float = 500.
 
+# GPU CLAHE availability check (requires OpenCV built with CUDA and cudaimgproc module)
+_HAS_CUDA_CLAHE = (
+    cp is not None and
+    hasattr(cv2, 'cuda') and
+    hasattr(cv2.cuda, 'createCLAHE')
+)
+
 def normalize_with_std_mean(img: np.array, mean= None, std= None):
     if mean is None:
         mean = 0.485
@@ -19,8 +26,11 @@ def normalize_with_std_mean(img: np.array, mean= None, std= None):
         std = 0.229
     return (img - mean) / std
 
-def normalize(img: np.ndarray, nonzero_indices: np.ndarray) -> np.ndarray:
-    return (img[nonzero_indices] - np.nanmin(img[nonzero_indices])) / (np.nanmax(img[nonzero_indices]) - np.nanmin(img[nonzero_indices]))
+def normalize(img, nonzero_indices):
+    """Min-max normalize the masked region. Works with both NumPy and CuPy arrays."""
+    xp = cp if (cp is not None and isinstance(img, cp.ndarray)) else np
+    vals = img[nonzero_indices]
+    return (vals - xp.nanmin(vals)) / (xp.nanmax(vals) - xp.nanmin(vals))
 
 
 def normalize_image(image, mean=0.5, std=0.1):
@@ -41,8 +51,18 @@ def normalize_image(image, mean=0.5, std=0.1):
     return image
 
 def clahe_func(img, limit: float = DEFAULT_CLAHE_LIMIT):
-
+    """CPU CLAHE. Input must be a NumPy array; implicitly downloads CuPy arrays."""
+    if cp is not None and isinstance(img, cp.ndarray):
+        img = cp.asnumpy(img)
     return cv2.createCLAHE(clipLimit=limit, tileGridSize=(1, 1)).apply(img.astype('uint16')).astype(np.float32)
+
+def _cuda_clahe_func(img_cp, limit: float = DEFAULT_CLAHE_LIMIT):
+    """GPU CLAHE using OpenCV CUDA (zero CPU round-trip). Requires OpenCV with cudaimgproc."""
+    img_uint16 = img_cp.astype(cp.uint16)
+    gpu_mat = cv_cuda_gpumat_from_cp_array(img_uint16)
+    clahe = cv2.cuda.createCLAHE(clipLimit=limit, tileGridSize=(1, 1))
+    result_mat = clahe.apply(gpu_mat)
+    return cp_array_from_cv_cuda_gpumat(result_mat).astype(cp.float32)
 
 def gaussian(x, amplitude, mean, stddev):
     return amplitude * np.exp(-((x - mean) / stddev) ** 2 / 2)
@@ -97,8 +117,11 @@ def _contrast_correction(
         img = xp.log10(img * coef + 1)
 
     if clahe:
-        img = clahe_func(img * coef, limit)
-        img[mask] = normalize(img,mask)
+        if config.PREPROCESSING_CUDA and _HAS_CUDA_CLAHE:
+            img = _cuda_clahe_func(img * coef, limit)
+        else:
+            img = clahe_func(img * coef, limit)
+        img[mask] = normalize(img, mask)
         img[~mask] = 0
 
     return img, mask
