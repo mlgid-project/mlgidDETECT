@@ -4,7 +4,7 @@ from mlgiddetect.postprocessing.utils import filter_boxes, onnx_to_xyxy
 from mlgiddetect.postprocessing import boxes_polar_to_reciprocal, boxes_reciprocal_q_to_xy, SmallQFilter, MergeBoxesPostprocessing, StandardPostprocessing, polar_to_cartesian
 from mlgiddetect.inference.tta_inference import tta_inference
 
-def standard_postprocessing(img_container, raw_results, img_processingimp):
+def standard_postprocessing(img_container, raw_results, img_processing):
     if raw_results[0].size == 0:
         logging.error('No peaks found in image %s. Maybe try another contrast correction.', img_container.nr)
         return img_container
@@ -14,7 +14,7 @@ def standard_postprocessing(img_container, raw_results, img_processingimp):
         img_container = onnx_to_xyxy(config, img_container, raw_results)
         img_container = filter_boxes(config, img_container) 
         if config.POSTPROCESSING_TTA: 
-            img_container = tta_inference(config, img_container, img_processingimp)
+            img_container = tta_inference(config, img_container, img_processing)
 
     if config.MODEL_TYPE == 'faster_rcnn':
         postprocessing = (
