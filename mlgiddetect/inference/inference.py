@@ -1,3 +1,4 @@
+import os
 import sys
 import logging
 import numpy as np
@@ -28,9 +29,22 @@ class Inference:
         self.use_cuda = use_gpu
         self.device_id = 0
 
-        if preferred_providers[0] == 'CUDAExecutionProvider':
+        if use_gpu:
             logging.info("Using the GPU for inference")
+            # Limit intra-op threads to 1: the GPU kernel manages its own parallelism
             sess_options.intra_op_num_threads = 1
+        else:
+            logging.info("Using the CPU for inference")
+            # Use physical cores only — hyperthreads hurt fp-heavy workloads
+            num_physical = (os.cpu_count() or 2) // 2
+            sess_options.intra_op_num_threads = num_physical
+            # ORT_SEQUENTIAL: detection models (DINO, Faster R-CNN) are largely
+            # sequential graphs; ORT_PARALLEL adds thread-spawn overhead per op.
+            sess_options.execution_mode = rt.ExecutionMode.ORT_SEQUENTIAL
+            # Enable all graph-level optimizations (constant folding, layout, fusion)
+            sess_options.graph_optimization_level = rt.GraphOptimizationLevel.ORT_ENABLE_ALL
+            logging.info("CPU inference: using %d physical threads, sequential execution, full graph optimization", num_physical)
+
         self.sess = rt.InferenceSession(model_path, providers=preferred_providers, sess_options=sess_options)
 
     def infer(self, img_container: ImageContainer, use_raw=False):
