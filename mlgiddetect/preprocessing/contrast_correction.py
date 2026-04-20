@@ -19,6 +19,9 @@ _HAS_CUDA_CLAHE = (
     hasattr(cv2.cuda, 'createCLAHE')
 )
 
+# Cache CLAHE objects by clip limit — creating one per image is measurable overhead
+_clahe_instance_cache: dict = {}
+
 def normalize_with_std_mean(img: np.array, mean= None, std= None):
     if mean is None:
         mean = 0.485
@@ -30,7 +33,8 @@ def normalize(img, nonzero_indices):
     """Min-max normalize the masked region. Works with both NumPy and CuPy arrays."""
     xp = cp if (cp is not None and isinstance(img, cp.ndarray)) else np
     vals = img[nonzero_indices]
-    return (vals - xp.nanmin(vals)) / (xp.nanmax(vals) - xp.nanmin(vals))
+    vmin = xp.nanmin(vals)
+    return (vals - vmin) / (xp.nanmax(vals) - vmin)
 
 
 def normalize_image(image, mean=0.5, std=0.1):
@@ -51,10 +55,12 @@ def normalize_image(image, mean=0.5, std=0.1):
     return image
 
 def clahe_func(img, limit: float = DEFAULT_CLAHE_LIMIT):
-    """CPU CLAHE. Input must be a NumPy array; implicitly downloads CuPy arrays."""
+    """CPU CLAHE. Reuses a cached CLAHE instance per clip limit."""
+    if limit not in _clahe_instance_cache:
+        _clahe_instance_cache[limit] = cv2.createCLAHE(clipLimit=limit, tileGridSize=(1, 1))
     if cp is not None and isinstance(img, cp.ndarray):
         img = cp.asnumpy(img)
-    return cv2.createCLAHE(clipLimit=limit, tileGridSize=(1, 1)).apply(img.astype('uint16')).astype(np.float32)
+    return _clahe_instance_cache[limit].apply(img.astype('uint16')).astype(np.float32)
 
 def _cuda_clahe_func(img_cp, limit: float = DEFAULT_CLAHE_LIMIT):
     """GPU CLAHE using OpenCV CUDA (zero CPU round-trip). Requires OpenCV with cudaimgproc."""
@@ -90,7 +96,9 @@ def _contrast_correction(
             log = False
             clahe = False
 
-    mask = ~xp.isnan(img) & (img != 0)
+    # np.isfinite is a single kernel (handles both nan and inf); avoids the
+    # temporary boolean array that ~np.isnan(img) & ~np.isinf(img) would create.
+    mask = xp.isfinite(img) & (img != 0)
 
     if linear_normalization:
         upper_clip_limit = xp.percentile(img[mask],99.9)

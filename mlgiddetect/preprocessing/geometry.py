@@ -107,14 +107,14 @@ def _get_polar_grid(config,
     r_range = (rr.min(), rr.max())
     phi_range = phi.min(), phi.max()
 
-    phi = xp.linspace(*phi_range, polar_shape[0])
-    r = xp.linspace(*r_range, polar_shape[1])
+    phi = xp.linspace(*phi_range, polar_shape[0], dtype=xp.float32)
+    r = xp.linspace(*r_range, polar_shape[1], dtype=xp.float32)
 
     r_matrix = r[xp.newaxis, :].repeat(polar_shape[0], axis=0)
     p_matrix = phi[:, xp.newaxis].repeat(polar_shape[1], axis=1)
 
-    polar_yy = r_matrix * xp.cos(p_matrix) + y0
-    polar_zz = r_matrix * xp.sin(p_matrix) + z0
+    polar_yy = (r_matrix * xp.cos(p_matrix) + y0).astype(xp.float32)
+    polar_zz = (r_matrix * xp.sin(p_matrix) + z0).astype(xp.float32)
 
     if use_cuda:
         polar_yy = cv_cuda_gpumat_from_cp_array(polar_yy)
@@ -135,9 +135,12 @@ def _calc_polar_img(config, img: np.ndarray, yy: np.ndarray, zz: np.ndarray, alg
                             zz,
                             interpolation=algorithm)
         else:
-            return cv2.remap(img.astype(np.float32),
-                yy.astype(np.float32),
-                zz.astype(np.float32),
+            # yy and zz are float32 from cache; np.ascontiguousarray with dtype
+            # is a no-op if the array is already contiguous float32.
+            return cv2.remap(
+                np.ascontiguousarray(img, dtype=np.float32),
+                yy,
+                zz,
                 interpolation=algorithm)
 
     except cv2.error:
