@@ -3,7 +3,8 @@ from mlgiddetect.dataloader import H5GIWAXSDataset
 from mlgiddetect.evaluation import Evaluator, get_full_conf_results
 from mlgiddetect.export import write_logs, write_single_log
 from mlgiddetect.utils import open_pkl_file
-from mlgiddetect.postprocessing import SmallQFilter, standard_postprocessing
+from mlgiddetect.postprocessing import SmallQFilter, standard_postprocessing, boxes_polar_to_reciprocal, boxes_reciprocal_q_to_xy, polar_to_cartesian
+from mlgiddetect.postprocessing.utils import onnx_to_xyxy, filter_boxes
 from mlgiddetect.inference.tta_inference import tta_inference
 from mlgiddetect.inference.inference import Inference
 import pickle
@@ -52,12 +53,27 @@ def eval_on_dataset(config, prepro_func, postpro_func=standard_postprocessing, d
         confidences = img_container.polar_labels.confidences
         gt_boxes = Tensor(labels.boxes)
 
-        if postpro_func:
+        '''if postpro_func:
             img_container = standard_postprocessing(img_container, img_processing.infer(img_container))
             if config.POSTPROCESSING_TTA:
                 img_container = tta_inference(config, img_container, img_processing)
         else:
             img_container = img_processing.infer(img_container)
+        pred_boxes = img_container.boxes
+        scores = Tensor(img_container.scores)'''
+
+        if postpro_func:
+            if img_container.config.MODEL_TYPE == 'dino':
+                img_container = onnx_to_xyxy(img_container.config, img_container, img_processing.infer(img_container))
+                img_container = filter_boxes(img_container.config, img_container)
+                if img_container.config.POSTPROCESSING_TTA:
+                    img_container = tta_inference(img_container.config, img_container, img_processing)
+                reciprocal_boxes_q = boxes_polar_to_reciprocal(img_container.config, img_container.boxes)
+                img_container = boxes_reciprocal_q_to_xy(img_container.config, img_container, reciprocal_boxes_q)
+                img_container = polar_to_cartesian(img_container)
+            else:
+                img_container = standard_postprocessing(img_container, img_processing.infer(img_container))
+
         pred_boxes = img_container.boxes
         scores = Tensor(img_container.scores)
 
