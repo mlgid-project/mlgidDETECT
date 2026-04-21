@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+from mlgiddetect.postprocessing.postprocessing import standard_postprocessing
 from mlgiddetect.preprocessing.contrast_correction import log_contrast
 from mlgiddetect.postprocessing.utils import filter_boxes, onnx_to_xyxy, consensus_boxes, box_flip_horizontal
 
@@ -17,8 +18,7 @@ def tta_inference(config, img_container, img_processing):
     
     # --- Perform inference on flipped image ---
     raw_results_flipped = imp.infer(img_container_flipped)
-    img_container_flipped = onnx_to_xyxy(config, img_container_flipped, raw_results_flipped)
-    img_container_flipped = filter_boxes(config, img_container_flipped)
+    img_container_flipped = standard_postprocessing(img_container_flipped, raw_results_flipped)
     
     # --- Flip boxes back to original coordinate system ---
     img_container_flipped = box_flip_horizontal(img_container_flipped)
@@ -29,8 +29,7 @@ def tta_inference(config, img_container, img_processing):
     
     # --- Perform inference on contrast-enhanced image ---
     raw_results_contrast = imp.infer(img_container_contrast, use_raw=True)
-    img_container_contrast = onnx_to_xyxy(config, img_container_contrast, raw_results_contrast)
-    img_container_contrast = filter_boxes(config, img_container_contrast)
+    img_container_contrast = standard_postprocessing(img_container_contrast, raw_results_contrast)
     
     # --- Consensus combination ---
     all_boxes = [img_container.boxes, img_container_flipped.boxes, img_container_contrast.boxes]
