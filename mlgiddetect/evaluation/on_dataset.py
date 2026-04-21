@@ -4,7 +4,8 @@ from mlgiddetect.evaluation import Evaluator, get_full_conf_results
 from mlgiddetect.export import write_logs, write_single_log
 from mlgiddetect.utils import open_pkl_file
 from mlgiddetect.postprocessing import SmallQFilter, standard_postprocessing
-from mlgiddetect.inference.tta_inference import tta_inference, Inference
+from mlgiddetect.inference.tta_inference import tta_inference
+from mlgiddetect.inference.inference import Inference
 import pickle
 from torch import Tensor
 from torchvision.ops import nms
