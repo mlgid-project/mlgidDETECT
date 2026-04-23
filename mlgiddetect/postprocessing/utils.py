@@ -1,5 +1,6 @@
 import torch
-from torchvision.ops import nms
+from torchvision.ops import nms, box_iou
+from typing import List, Tuple
 
 # for output bounding box post-processing
 def box_cxcywh_to_xyxy(config, x):
@@ -47,4 +48,69 @@ def filter_boxes(config, img_container):
     img_container.boxes = boxes[to_keep]
     img_container.scores = scores[to_keep]
 
+    return img_container
+
+def consensus_boxes(
+    boxes_list: List[torch.Tensor],
+    scores_list: List[torch.Tensor],
+    iou_thr: float = 0.5,
+    min_sets: int = 2
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """
+    Consensus box fusion: keeps boxes that appear in >= min_sets predictions
+    using IoU matching, and returns fused boxes with aggregated scores.
+    """
+    num_sets = len(boxes_list)
+    device = boxes_list[0].device if boxes_list else torch.device('cpu')
+
+    all_boxes, all_scores, all_set_ids = [], [], []
+    for set_id, (b, s) in enumerate(zip(boxes_list, scores_list)):
+        if len(b) > 0:
+            all_boxes.append(b)
+            all_scores.append(s)
+            all_set_ids.append(torch.full((len(b),), set_id, device=device, dtype=torch.long))
+
+    if not all_boxes:
+        return torch.empty((0, 4), device=device), torch.empty((0,), device=device)
+
+    boxes = torch.cat(all_boxes)
+    scores = torch.cat(all_scores)
+    set_ids = torch.cat(all_set_ids)
+
+    # anchor each cluster to its highest-score box
+    order = scores.argsort(descending=True)
+    boxes, scores, set_ids = boxes[order], scores[order], set_ids[order]
+
+    iou_matrix = box_iou(boxes, boxes)
+    processed = torch.zeros(len(boxes), dtype=torch.bool, device=device)
+    fused_boxes, fused_scores = [], []
+
+    for i in range(len(boxes)):
+        if processed[i]:
+            continue
+        cluster_mask = (iou_matrix[i] >= iou_thr) & ~processed
+        cluster_idx = cluster_mask.nonzero(as_tuple=True)[0]
+
+        cluster_sets = set_ids[cluster_idx]
+        unique_sets = cluster_sets.unique()
+        if unique_sets.numel() >= min_sets:
+            cluster_boxes = boxes[cluster_idx]
+            cluster_scores = scores[cluster_idx]
+            weights = cluster_scores / cluster_scores.sum()
+            fused_boxes.append((cluster_boxes * weights.unsqueeze(1)).sum(0))
+            fused_scores.append(cluster_scores.mean() * (unique_sets.numel() / num_sets))
+
+        processed[cluster_mask] = True
+
+    if not fused_boxes:
+        return torch.empty((0, 4), device=device), torch.empty((0,), device=device)
+
+    return torch.stack(fused_boxes), torch.stack(fused_scores)
+
+
+def box_flip_horizontal(img_container):
+    flipped_boxes = img_container.boxes.clone()
+    flipped_boxes[:, 0] = img_container.raw_polar_image.shape[-1] - img_container.boxes[:, 2]
+    flipped_boxes[:, 2] = img_container.raw_polar_image.shape[-1] - img_container.boxes[:, 0]
+    img_container.boxes = flipped_boxes
     return img_container

@@ -31,12 +31,15 @@ class Inference:
             sess_options.intra_op_num_threads = 1
         self.sess = rt.InferenceSession(model_path, providers=preferred_providers, sess_options=sess_options)
 
-    def infer(self, img_container: ImageContainer):
+    def infer(self, img_container: ImageContainer, use_raw=False):
         # Run inference with ONNX Runtime
         input_name = self.sess.get_inputs()[0].name
 
         try:
-            return self.sess.run(None, {input_name: img_container.converted_polar_image.astype(np.float32)})
+            if use_raw:
+                return self.sess.run(None, {input_name: img_container.raw_polar_image.astype(np.float32)})
+            else:
+                return self.sess.run(None, {input_name: img_container.converted_polar_image.astype(np.float32)})
         except rt.capi.onnxruntime_pybind11_state.RuntimeException as e:
             error_message = str(e)
             if "Failed to allocate memory" in error_message or "BFCArena::AllocateRawInternal" in error_message:

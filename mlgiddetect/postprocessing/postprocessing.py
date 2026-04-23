@@ -1,6 +1,6 @@
 import logging
 import torch
-from mlgiddetect.postprocessing.utils import onnx_to_xyxy, filter_boxes, onnx_to_xyxy
+from mlgiddetect.postprocessing.utils import filter_boxes, onnx_to_xyxy
 from mlgiddetect.postprocessing import boxes_polar_to_reciprocal, boxes_reciprocal_q_to_xy, SmallQFilter, MergeBoxesPostprocessing, StandardPostprocessing, polar_to_cartesian
 
 def standard_postprocessing(img_container, raw_results):
@@ -11,7 +11,7 @@ def standard_postprocessing(img_container, raw_results):
     config = img_container.config
     if config.MODEL_TYPE == 'dino':
         img_container = onnx_to_xyxy(config, img_container, raw_results)
-        img_container = filter_boxes(config, img_container) 
+        img_container = filter_boxes(config, img_container)
 
     if config.MODEL_TYPE == 'faster_rcnn':
         postprocessing = (

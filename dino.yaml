@@ -7,7 +7,7 @@ MODEL:
   FORCE_CPU: False              #force inference on CPU
 
 PREPROCESSING:
-  CUDA: False                    #use CUDA for preprocessing if available
+  CUDA: False                   #use CUDA for preprocessing if available
   FLIPHORIZONTAL: False         #flip the image horizontally for preprocessing
   QUAZIPOLAR: False             #use quazipolar transformation for preprocessing 
   LINEAR_CONTRAST: True         #use linear contrast correction for preprocessing
@@ -18,6 +18,7 @@ PREPROCESSING:
 POSTPROCESSING:
   SCORE: 0.4                    #minimum score for peaks
   NMSIOU: 0.4                   #non maximum suppression iou threshold
+  TTA: False                    #use test time augmentation for postprocessing
 
 INPUT:
   DATASET: '/home/testuser/mlgidDETECT/inputs/test.h5'  #pygid NeXus h5 file

@@ -3,7 +3,10 @@ from mlgiddetect.dataloader import H5GIWAXSDataset
 from mlgiddetect.evaluation import Evaluator, get_full_conf_results
 from mlgiddetect.export import write_logs, write_single_log
 from mlgiddetect.utils import open_pkl_file
-from mlgiddetect.postprocessing import SmallQFilter, standard_postprocessing
+from mlgiddetect.postprocessing import SmallQFilter, standard_postprocessing, boxes_polar_to_reciprocal, boxes_reciprocal_q_to_xy, polar_to_cartesian
+from mlgiddetect.postprocessing.utils import onnx_to_xyxy, filter_boxes
+from mlgiddetect.inference.tta_inference import tta_inference
+from mlgiddetect.inference.inference import Inference
 import pickle
 from torch import Tensor
 from torchvision.ops import nms
@@ -17,7 +20,7 @@ def filter_non_elong(pred_boxes):
     keep = x_extent*1.15 < y_extent
     return keep
 
-def eval_on_dataset(config, prepro_func, img_processing, postpro_func=standard_postprocessing, dataset = None, export_path = None):
+def eval_on_dataset(config, prepro_func, postpro_func=standard_postprocessing, dataset = None, export_path = None):
     if dataset is None:
         if config.INPUT_DATASET.endswith(('pkl','pickle','p')):
             dataset = open_pkl_file(config.INPUT_DATASET)
@@ -40,6 +43,8 @@ def eval_on_dataset(config, prepro_func, img_processing, postpro_func=standard_p
             'pred_scores': list()
         }
     
+    img_processing = Inference(config)
+
     logging.info('Started evaluation')
     for i, img_container in enumerate(dataset):
         img_container.config.POSTPROCESSING_SCORE = 0.1
@@ -50,11 +55,13 @@ def eval_on_dataset(config, prepro_func, img_processing, postpro_func=standard_p
 
         if postpro_func:
             img_container = standard_postprocessing(img_container, img_processing.infer(img_container))
+            if config.POSTPROCESSING_TTA:
+                img_container = tta_inference(config, img_container, img_processing)
         else:
             img_container = img_processing.infer(img_container)
         pred_boxes = img_container.boxes
         scores = Tensor(img_container.scores)
-
+        
         if export_path is not None:
             results['images'].append(Tensor(giwaxs_img[0]).cpu())
             results['raw_images'].append(Tensor(img_container.raw_polar_image))
@@ -69,9 +76,6 @@ def eval_on_dataset(config, prepro_func, img_processing, postpro_func=standard_p
     if export_path is not None:
         with open(export_path + '/object_detection_results.pkl', 'wb') as handle:
             pickle.dump(results, handle, protocol=4)
-
-
-
         
     df1, df2 = get_full_conf_results(evaluator.metrics)
 
