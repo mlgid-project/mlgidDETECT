@@ -1,4 +1,5 @@
 import logging
+import numpy as np
 from matplotlib import pyplot as plt
 from mlgiddetect.utils import open_pkl_file
 from torchvision import utils
@@ -77,3 +78,32 @@ def plot_from_pkl(pkl_file: str, img_path: str, threshold: float = 0.01):
         scores = scores[scores>threshold]
         image = utils.draw_bounding_boxes(image, pred_boxes)
         utils.save_image(image, img_path + '/' + str(i) + '.jpg')
+
+def plot_img_with_boxes_and_gt(config, img_container, i = '', prefix = ''):
+
+    img = img_container.converted_polar_image
+    scores = img_container.scores
+    boxes = img_container.boxes
+    gt_boxes = img_container.polar_labels.boxes
+
+    boxes = boxes[scores > config.POSTPROCESSING_SCORE]
+    scores = scores[scores > config.POSTPROCESSING_SCORE]
+
+    plt.figure(figsize=(16,10))
+    plt.imshow(np.squeeze(img))
+    ax = plt.gca()
+    if boxes is not None:    
+        for p, (xmin, ymin, xmax, ymax), c in zip(scores, boxes.tolist(), COLORS * 100):
+            ax.add_patch(plt.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin,
+                                    fill=False, color=c, linewidth=1))
+            text = f": {p.item():.2f}"
+            ax.text(xmin, ymin, text, fontsize=15,
+                    bbox=dict(facecolor='yellow', alpha=0.5))
+    if gt_boxes is not None:
+        for (xmin, ymin, xmax, ymax) in gt_boxes.tolist():
+            ax.add_patch(plt.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin,
+                                    fill=False, color='red', linewidth=1))
+    plt.axis('off')
+    plt.savefig(config.OUTPUT_FOLDER + '/' + config.OUTPUT_IMAGEPREFIX + prefix + str(i) + ".png", bbox_inches='tight', pad_inches=0)
+    logging.info('Saved detection output to ' + config.OUTPUT_FOLDER + '/' + config.OUTPUT_IMAGEPREFIX + prefix + str(i) + ".png")
+    plt.close()

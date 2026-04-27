@@ -22,6 +22,50 @@ def filter_non_elong(img_container):
     img_container.boxes = img_container.boxes[keep]
     return img_container
 
+def perform_nms(config, img_container, iou_threshold: float):
+    # Distinguish between rings and segments based on vertical coverage
+    img_height = config.PREPROCESSING_POLAR_SHAPE[0]
+    y_extent = img_container.boxes[:, 3] - img_container.boxes[:, 1]
+    is_ring = y_extent >= img_height * 0.35 # heuristic: rings cover at least 35% of vertical axis, segments less
+    
+    # Separate boxes into rings and segments
+    ring_mask = is_ring
+    segment_mask = ~is_ring
+    
+    ring_boxes = img_container.boxes[ring_mask]
+    ring_scores = img_container.scores[ring_mask]
+    segment_boxes = img_container.boxes[segment_mask]
+    segment_scores = img_container.scores[segment_mask]
+    
+    # Apply NMS to rings with lenient threshold
+    ring_idx_keep = []
+    if len(ring_boxes) > 0:
+        ring_idx_keep = nms(ring_boxes, ring_scores, iou_threshold=0.4)
+    
+    # Apply NMS to segments with strict threshold
+    segment_idx_keep = []
+    if len(segment_boxes) > 0:
+        segment_idx_keep = nms(segment_boxes, segment_scores, iou_threshold=0.1)
+    
+    # Reconstruct boxes and scores
+    filtered_boxes = []
+    filtered_scores = []
+    
+    if len(ring_idx_keep) > 0:
+        filtered_boxes.append(ring_boxes[ring_idx_keep])
+        filtered_scores.append(ring_scores[ring_idx_keep])
+
+    if len(segment_idx_keep) > 0:
+        filtered_boxes.append(segment_boxes[segment_idx_keep])
+        filtered_scores.append(segment_scores[segment_idx_keep])
+    
+    if filtered_boxes:
+        img_container.boxes = torch.cat(filtered_boxes)
+        img_container.scores = torch.cat(filtered_scores)
+    else:
+        img_container.boxes = torch.empty((0, 4), device=img_container.boxes.device)
+        img_container.scores = torch.empty((0,), device=img_container.scores.device)
+
 def onnx_to_xyxy(config, img_container, raw_results, num_select: int = 150):
     out_logits = torch.from_numpy(raw_results[0])
     out_bbox = torch.from_numpy(raw_results[1])
@@ -38,15 +82,14 @@ def onnx_to_xyxy(config, img_container, raw_results, num_select: int = 150):
     return img_container
 
 def filter_boxes(config, img_container):
-    img_container = filter_non_elong(img_container)
+    #img_container = filter_non_elong(img_container)
 
-    idx_keep = nms(img_container.boxes, img_container.scores, config.POSTPROCESSING_NMSIOU)
-    boxes = img_container.boxes[idx_keep]
-    scores = img_container.scores[idx_keep]
-
-    to_keep = scores > config.POSTPROCESSING_SCORE
-    img_container.boxes = boxes[to_keep]
-    img_container.scores = scores[to_keep]
+    perform_nms(config, img_container, iou_threshold=config.POSTPROCESSING_NMSIOU)
+    
+    # Apply score threshold
+    to_keep = img_container.scores > config.POSTPROCESSING_SCORE
+    img_container.boxes = img_container.boxes[to_keep]
+    img_container.scores = img_container.scores[to_keep]
 
     return img_container
 
