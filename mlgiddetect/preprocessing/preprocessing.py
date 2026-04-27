@@ -10,6 +10,7 @@ except ImportError:
 
 from mlgiddetect.preprocessing import (preprocess_geometry, contrast_correction, add_batch_and_color_channel,
                                         grayscale_to_color)
+from mlgiddetect.utils import cp_array_from_cv_cuda_gpumat
 
 def standard_preprocessing(config, raw_reciprocal_img: np.array, counter = None):
 
@@ -29,12 +30,6 @@ def standard_preprocessing(config, raw_reciprocal_img: np.array, counter = None)
     equalized_polar, mask = contrast_correction(config, raw_polar_img)
     equalized_polar = add_batch_and_color_channel(equalized_polar)
     mask = add_batch_and_color_channel(mask)
-
-    #reshape for detr model
-    if config.MODEL_TYPE == 'detr':
-        equalized_polar = grayscale_to_color(equalized_polar)
-        equalized_polar = equalized_polar[:,:,:,:]
-        equalized_polar = np.pad(equalized_polar, ((0,0),(0,0,),(0,832), (0,0)))
 
     if config.PREPROCESSING_CUDA:
         equalized_polar = cp.asnumpy(equalized_polar)

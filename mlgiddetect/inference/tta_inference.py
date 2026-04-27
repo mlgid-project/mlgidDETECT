@@ -1,7 +1,10 @@
+from matplotlib.pylab import gamma
 import numpy as np
 import copy
+import torch
+from torchvision.ops import nms
 from mlgiddetect.postprocessing.postprocessing import standard_postprocessing
-from mlgiddetect.preprocessing.contrast_correction import log_contrast
+from mlgiddetect.preprocessing.contrast_correction import log_contrast, linear_contrast_raw, gamma_contrast
 from mlgiddetect.postprocessing.utils import filter_boxes, onnx_to_xyxy, consensus_boxes, box_flip_horizontal
 
 
@@ -35,6 +38,12 @@ def tta_inference(config, img_container, img_processing):
     all_boxes = [img_container.boxes, img_container_flipped.boxes, img_container_contrast.boxes]
     all_scores = [img_container.scores, img_container_flipped.scores, img_container_contrast.scores]
     
-    img_container.boxes, img_container.scores = consensus_boxes(all_boxes, all_scores, iou_thr=0.2, min_sets=2)
+    # img_container.boxes, img_container.scores = consensus_boxes(all_boxes, all_scores, iou_thr=0.1, min_sets=1)
+    img_container.boxes = torch.cat(all_boxes)
+    img_container.scores = torch.cat(all_scores)
     
+    keep = nms(img_container.boxes, img_container.scores, iou_threshold=0.2)
+    img_container.boxes = img_container.boxes[keep]
+    img_container.scores = img_container.scores[keep]
+
     return img_container

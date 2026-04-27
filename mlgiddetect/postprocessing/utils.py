@@ -40,12 +40,12 @@ def perform_nms(config, img_container, iou_threshold: float):
     # Apply NMS to rings with lenient threshold
     ring_idx_keep = []
     if len(ring_boxes) > 0:
-        ring_idx_keep = nms(ring_boxes, ring_scores, iou_threshold=0.4)
+        ring_idx_keep = nms(ring_boxes, ring_scores, iou_threshold=0.1)
     
     # Apply NMS to segments with strict threshold
     segment_idx_keep = []
     if len(segment_boxes) > 0:
-        segment_idx_keep = nms(segment_boxes, segment_scores, iou_threshold=0.1)
+        segment_idx_keep = nms(segment_boxes, segment_scores, iou_threshold=0.4)
     
     # Reconstruct boxes and scores
     filtered_boxes = []
@@ -83,7 +83,7 @@ def onnx_to_xyxy(config, img_container, raw_results, num_select: int = 150):
 
 def filter_boxes(config, img_container):
     #img_container = filter_non_elong(img_container)
-
+    
     perform_nms(config, img_container, iou_threshold=config.POSTPROCESSING_NMSIOU)
     
     # Apply score threshold

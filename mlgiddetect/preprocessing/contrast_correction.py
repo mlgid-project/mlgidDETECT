@@ -122,7 +122,34 @@ def log_contrast(img_container):
         img = img[np.newaxis, :, :, :]
 
     eps = 1e-6
-    out = np.log1p(img + eps)
+    out = np.log1p(np.maximum(img, 0) + eps)
     out = out / out.max()
     img_container.raw_polar_image = out.astype(np.float32)
+    return img_container
+
+def linear_contrast_raw(img_container):
+    img = img_container.raw_polar_image
+    if img.ndim == 2:
+        img = img[np.newaxis, np.newaxis, :, :]
+    elif img.ndim == 3:
+        img = img[np.newaxis, :, :, :]
+
+    upper_clip_limit = np.percentile(img,97)
+    lower_clip_limit = np.percentile(img,5)
+
+    img = np.clip(img, lower_clip_limit, upper_clip_limit)
+    img = normalize_image(img)
+    img_container.raw_polar_image = img.astype(np.float32)
+    return img_container
+
+def gamma_contrast(img_container, gamma=0.7):
+    img = img_container.raw_polar_image
+    if img.ndim == 2:
+        img = img[np.newaxis, np.newaxis, :, :]
+    elif img.ndim == 3:
+        img = img[np.newaxis, :, :, :]
+
+    img = np.power(img, gamma)
+    img = normalize_image(img)
+    img_container.raw_polar_image = img.astype(np.float32)
     return img_container
