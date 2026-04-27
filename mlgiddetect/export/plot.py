@@ -96,13 +96,15 @@ def plot_img_with_boxes_and_gt(config, img_container, i = '', prefix = ''):
         for p, (xmin, ymin, xmax, ymax), c in zip(scores, boxes.tolist(), COLORS * 100):
             ax.add_patch(plt.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin,
                                     fill=False, color=c, linewidth=1))
-            text = f": {p.item():.2f}"
+            text = f"{p.item():.2f}"
             ax.text(xmin, ymin, text, fontsize=15,
                     bbox=dict(facecolor='yellow', alpha=0.5))
     if gt_boxes is not None:
         for (xmin, ymin, xmax, ymax) in gt_boxes.tolist():
             ax.add_patch(plt.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin,
-                                    fill=False, color='red', linewidth=1))
+                                    fill=False, color='lime', linewidth=2))
+            ax.text(xmin, ymin - 10, 'GT', fontsize=12, color='lime',
+                    bbox=dict(facecolor='black', alpha=0.7))
     plt.axis('off')
     plt.savefig(config.OUTPUT_FOLDER + '/' + config.OUTPUT_IMAGEPREFIX + prefix + str(i) + ".png", bbox_inches='tight', pad_inches=0)
     logging.info('Saved detection output to ' + config.OUTPUT_FOLDER + '/' + config.OUTPUT_IMAGEPREFIX + prefix + str(i) + ".png")

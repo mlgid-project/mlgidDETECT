@@ -7,6 +7,7 @@ from mlgiddetect.postprocessing import SmallQFilter, standard_postprocessing, bo
 from mlgiddetect.postprocessing.utils import onnx_to_xyxy, filter_boxes
 from mlgiddetect.inference.tta_inference import tta_inference
 from mlgiddetect.inference.inference import Inference
+from mlgiddetect.export.plot import plot_img_with_boxes_and_gt
 import pickle
 from torch import Tensor
 from torchvision.ops import nms
@@ -72,6 +73,8 @@ def eval_on_dataset(config, prepro_func, postpro_func=standard_postprocessing, d
 
         logging.info('evaluating img nr ' + str(i))
         evaluator.get_exp_metrics(pred_boxes, scores, gt_boxes, confidences)
+
+        # plot_img_with_boxes_and_gt(config, img_container, i = i, prefix = 'TTA_' if config.POSTPROCESSING_TTA else 'noTTA_')
 
     if export_path is not None:
         with open(export_path + '/object_detection_results.pkl', 'wb') as handle:
