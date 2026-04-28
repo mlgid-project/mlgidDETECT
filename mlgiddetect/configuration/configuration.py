@@ -23,6 +23,7 @@ class Config:
         self.INPUT_IMGPATH = None
         self.INPUT_DATASET = None
         self.INPUT_LABELED = False
+        self.INPUT_PYGIDLABELED = False
         self.GEO_PIXELPERANGSTROEM = 500
         self.GEO_RECIPROCAL_SHAPE = [1501,1501]
         self.GEO_QMAX = None
@@ -36,7 +37,8 @@ class Config:
         self.OUTPUT_FOLDER = './outputs/'
         self.OUTPUT_IMAGEPREFIX = ''
         self.POSTPROCESSING_SCORE = 0.4
-        self.POSTPROCESSING_NMSIOU = 0.4
+        self.POSTPROCESSING_NMSRING = 0.1
+        self.POSTPROCESSING_NMSSEGMENT = 0.3
         self.POSTPROCESSING_TTA = False
 
 

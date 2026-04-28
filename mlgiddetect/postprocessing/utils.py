@@ -40,12 +40,12 @@ def perform_nms(config, img_container, iou_threshold: float):
     # Apply NMS to rings with lenient threshold
     ring_idx_keep = []
     if len(ring_boxes) > 0:
-        ring_idx_keep = nms(ring_boxes, ring_scores, iou_threshold=0.1)
+        ring_idx_keep = nms(ring_boxes, ring_scores, iou_threshold=config.POSTPROCESSING_NMSRING)
     
     # Apply NMS to segments with strict threshold
     segment_idx_keep = []
     if len(segment_boxes) > 0:
-        segment_idx_keep = nms(segment_boxes, segment_scores, iou_threshold=0.4)
+        segment_idx_keep = nms(segment_boxes, segment_scores, iou_threshold=config.POSTPROCESSING_NMSSEGMENT)
     
     # Reconstruct boxes and scores
     filtered_boxes = []

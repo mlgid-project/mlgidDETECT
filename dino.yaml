@@ -21,11 +21,10 @@ POSTPROCESSING:
   TTA: False                    #use test time augmentation for postprocessing
 
 INPUT:
-  DATASET: '/home/nicolerch/Documents/mlgid/mlgidDETECT_personal/inputs/organic_labeled.h5'  #pygid NeXus h5 file
+  DATASET: '/home/testuser/dataset.h5'  #pygid NeXus h5 file
   #IMGPATH: './inputs/w4_mapbbr32.tif'  #image file in reciprocal coordinates
-  LABELED: True                #option to use labeled data for evaluation
-  PYGIDLABELED: True           #option to use PyGID labeled dataset
+  LABELED: False                #option to use labeled data for evaluation
 
 OUTPUT:
-  IMAGEPREFIX: 'test'    #image prefix for saving 
-  FOLDER: '/home/nicolerch/Documents/mlgid/mlgidDETECT/outputs'           #image output folder 
+  IMAGEPREFIX: ''    #image prefix for saving 
+  FOLDER: ''           #image output folder 
