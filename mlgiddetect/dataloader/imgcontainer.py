@@ -19,6 +19,7 @@ class Labels():
     background_levels: list = field(default_factory=list)
     background_slopes: list = field(default_factory=list)
     is_ring: list = field(default_factory=list)
+    visibility: list = field(default_factory=list)
     img_nr: int = 0
     img_name: str = None
     peak_height: int = 0
