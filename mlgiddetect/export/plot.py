@@ -90,7 +90,7 @@ def plot_img_with_boxes_and_gt(config, img_container, i = '', prefix = ''):
     scores = scores[scores > config.POSTPROCESSING_SCORE]
 
     plt.figure(figsize=(16,10))
-    plt.imshow(np.squeeze(img))
+    plt.imshow(np.squeeze(img), cmap='plasma')
     ax = plt.gca()
     if boxes is not None:    
         for p, (xmin, ymin, xmax, ymax), c in zip(scores, boxes.tolist(), COLORS * 100):

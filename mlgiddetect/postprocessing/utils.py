@@ -22,7 +22,7 @@ def filter_non_elong(img_container):
     img_container.boxes = img_container.boxes[keep]
     return img_container
 
-def perform_nms(config, img_container, iou_threshold: float):
+def perform_nms(config, img_container):
     # Distinguish between rings and segments based on vertical coverage
     img_height = config.PREPROCESSING_POLAR_SHAPE[0]
     y_extent = img_container.boxes[:, 3] - img_container.boxes[:, 1]
@@ -84,7 +84,7 @@ def onnx_to_xyxy(config, img_container, raw_results, num_select: int = 150):
 def filter_boxes(config, img_container):
     #img_container = filter_non_elong(img_container)
     
-    perform_nms(config, img_container, iou_threshold=config.POSTPROCESSING_NMSIOU)
+    perform_nms(config, img_container)
     
     # Apply score threshold
     to_keep = img_container.scores > config.POSTPROCESSING_SCORE
