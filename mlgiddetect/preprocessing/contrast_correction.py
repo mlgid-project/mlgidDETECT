@@ -9,8 +9,8 @@ from mlgiddetect.configuration import Config
 from mlgiddetect.utils import cv_cuda_gpumat_from_cp_array, cp_array_from_cv_cuda_gpumat
 from scipy.ndimage import gaussian_filter
 
-DEFAULT_CLAHE_LIMIT: float = 2000.
-DEFAULT_CLAHE_COEF: float = 500.
+DEFAULT_CLAHE_LIMIT: float = 2500.
+DEFAULT_CLAHE_COEF: float = 400.
 
 def normalize_with_std_mean(img: np.array, mean= None, std= None):
     if mean is None:
@@ -93,7 +93,7 @@ def _contrast_correction(
         return img, mask
 
     if log:
-        img[mask] = xp.log10(img[mask] * coef + 1)
+        img[mask] = xp.log10(img[mask] * 1 + 1)
         img[mask] =  normalize(img, mask)
 
     if clahe:
