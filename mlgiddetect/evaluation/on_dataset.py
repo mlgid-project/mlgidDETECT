@@ -1,5 +1,7 @@
 import logging
+import numpy as np
 from mlgiddetect.dataloader import H5GIWAXSDataset
+from mlgiddetect.dataloader.pygidloader_labeled import PyGIDDataset as PyGIDLabeledDataset
 from mlgiddetect.evaluation import Evaluator, get_full_conf_results
 from mlgiddetect.export import write_logs, write_single_log
 from mlgiddetect.utils import open_pkl_file
@@ -25,6 +27,8 @@ def eval_on_dataset(config, prepro_func, postpro_func=standard_postprocessing, d
     if dataset is None:
         if config.INPUT_DATASET.endswith(('pkl','pickle','p')):
             dataset = open_pkl_file(config.INPUT_DATASET)
+        elif getattr(config, 'INPUT_PYGIDLABELED', False):
+            dataset = PyGIDLabeledDataset(config, preprocess_func=prepro_func, buffer_size=5)
         else:
             dataset = H5GIWAXSDataset(config, config.INPUT_DATASET, preprocess_func=prepro_func, buffer_size=5)
 
@@ -47,34 +51,48 @@ def eval_on_dataset(config, prepro_func, postpro_func=standard_postprocessing, d
     img_processing = Inference(config)
 
     logging.info('Started evaluation')
-    for i, img_container in enumerate(dataset):
-        img_container.config.POSTPROCESSING_SCORE = 0.1
-        giwaxs_img = img_container.converted_polar_image
-        labels = img_container.polar_labels
-        confidences = img_container.polar_labels.confidences
-        gt_boxes = Tensor(labels.boxes)
+    try:
+        for i, img_container in enumerate(dataset):
+            img_container.config.POSTPROCESSING_SCORE = 0.1
+            giwaxs_img = img_container.converted_polar_image
+            labels = img_container.polar_labels
+            gt_boxes = Tensor(np.asarray(labels.boxes, dtype=np.float32))
+            if isinstance(dataset, PyGIDLabeledDataset):
+                visibility = np.asarray(labels.visibility, dtype=np.int32)
+                confidences = np.select(
+                    [visibility == 3, visibility == 2, visibility == 1],
+                    [1.0, 0.5, 0.1],
+                    default=np.asarray(labels.confidences, dtype=np.float32)
+                ).astype(np.float32)
+            else:
+                visibility = np.asarray([], dtype=np.int32)
+                confidences = np.asarray(labels.confidences, dtype=np.float32)
 
-        if postpro_func:
-            img_container = standard_postprocessing(img_container, img_processing.infer(img_container))
-            if config.POSTPROCESSING_TTA:
-                img_container = tta_inference(config, img_container, img_processing)
-        else:
-            img_container = img_processing.infer(img_container)
-        pred_boxes = img_container.boxes
-        scores = Tensor(img_container.scores)
-        
-        if export_path is not None:
-            results['images'].append(Tensor(giwaxs_img[0]).cpu())
-            results['raw_images'].append(Tensor(img_container.raw_polar_image))
-            results['gt_boxes'].append(gt_boxes)
-            results['gt_scores'].append(Tensor(confidences).cpu())
-            results['pred_boxes'].append(pred_boxes)
-            results['pred_scores'].append(scores)
+            if postpro_func:
+                img_container = standard_postprocessing(img_container, img_processing.infer(img_container))
+                if config.POSTPROCESSING_TTA:
+                    img_container = tta_inference(config, img_container, img_processing)
+            else:
+                img_container = img_processing.infer(img_container)
+            pred_boxes = img_container.boxes
+            scores = Tensor(img_container.scores)
+            
+            if export_path is not None:
+                results['images'].append(Tensor(giwaxs_img[0]).cpu())
+                results['raw_images'].append(Tensor(img_container.raw_polar_image))
+                results['gt_boxes'].append(gt_boxes)
+                results['gt_scores'].append(Tensor(confidences).cpu())
+                results['pred_boxes'].append(pred_boxes)
+                results['pred_scores'].append(scores)
+                results['visibility'].append(visibility)
 
-        logging.info('evaluating img nr ' + str(i))
-        evaluator.get_exp_metrics(pred_boxes, scores, gt_boxes, confidences)
+            logging.info('evaluating img nr ' + str(i))
+            evaluator.get_exp_metrics(pred_boxes, scores, gt_boxes, confidences)
 
-        # plot_img_with_boxes_and_gt(config, img_container, i = i, prefix = 'TTA_' if config.POSTPROCESSING_TTA else 'noTTA_')
+            # plot_img_with_boxes_and_gt(config, img_container, i = i, prefix = 'TTA_' if config.POSTPROCESSING_TTA else 'noTTA_')
+    finally:
+        if isinstance(dataset, PyGIDLabeledDataset):
+            dataset.close()
 
     if export_path is not None:
         with open(export_path + '/object_detection_results.pkl', 'wb') as handle:

@@ -10,7 +10,7 @@ PREPROCESSING:
   CUDA: False                   #use CUDA for preprocessing if available
   FLIPHORIZONTAL: False         #flip the image horizontally for preprocessing
   QUAZIPOLAR: False             #use quazipolar transformation for preprocessing 
-  LINEAR_CONTRAST: True         #use linear contrast correction for preprocessing
+  LINEAR_CONTRAST: False         #use linear contrast correction for preprocessing
   NO_CONTRASTCORRECTION: False  #do not perform any contrast correction for preprocessing
   POLAR_SHAPE: [512,1024]       #model input size
   POLAR_CONVERSION: True        #use to perform polar conversion 
@@ -21,10 +21,11 @@ POSTPROCESSING:
   TTA: False                    #use test time augmentation for postprocessing
 
 INPUT:
-  DATASET: '/home/testuser/mlgidDETECT/inputs/test.h5'  #pygid NeXus h5 file
+  DATASET: '/home/nicolerch/Documents/mlgid/mlgidDETECT_personal/inputs/organic_labeled.h5'  #pygid NeXus h5 file
   #IMGPATH: './inputs/w4_mapbbr32.tif'  #image file in reciprocal coordinates
-  LABELED: False                #option to use labeled data for evaluation
+  LABELED: True                #option to use labeled data for evaluation
+  PYGIDLABELED: True           #option to use PyGID labeled dataset
 
 OUTPUT:
-  IMAGEPREFIX: 'w4_mapbbr32'    #image prefix for saving 
-  FOLDER: './outputs'           #image output folder 
+  IMAGEPREFIX: 'test'    #image prefix for saving 
+  FOLDER: '/home/nicolerch/Documents/mlgid/mlgidDETECT/outputs'           #image output folder 
