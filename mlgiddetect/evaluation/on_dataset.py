@@ -14,12 +14,6 @@ from mlgiddetect.utils import open_pkl_file
 
 postprocessing =  SmallQFilter(50)
 
-def filter_non_elong(pred_boxes):
-    y_extent = pred_boxes[:,3] - pred_boxes[:,1]
-    x_extent = pred_boxes[:,2] - pred_boxes[:,0]
-    keep = x_extent*1.15 < y_extent
-    return keep
-
 def eval_on_dataset(config, prepro_func, postpro_func=standard_postprocessing, dataset = None, export_path = None):
     if dataset is None:
         if config.INPUT_DATASET.endswith(('pkl','pickle','p')):
