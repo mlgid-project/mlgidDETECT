@@ -10,8 +10,11 @@ PREPROCESSING:
   CUDA: False                   #use CUDA for preprocessing if available
   FLIPHORIZONTAL: False         #flip the image horizontally for preprocessing
   QUAZIPOLAR: False             #use quazipolar transformation for preprocessing 
-  LINEAR_CONTRAST: True         #use linear contrast correction for preprocessing
-  NO_CONTRASTCORRECTION: False  #do not perform any contrast correction for preprocessing
+  LOG: True                     #use log contrast correction for preprocessing
+  HISTOGRAMEQUALIZATION: False  #use histogram equalization for preprocessing
+  PERFORMCLIPPING: True         #perform clipping of pixel values for preprocessing
+  HIGHERCLIPPINGPERCENTILE: 99.5 #upper clipping percentile for preprocessing
+  LOWERCLIPPINGPERCENTILE: 5.0  #lower clipping percentile for preprocessing
   POLAR_SHAPE: [512,1024]       #model input size
   POLAR_CONVERSION: True        #use to perform polar conversion 
 

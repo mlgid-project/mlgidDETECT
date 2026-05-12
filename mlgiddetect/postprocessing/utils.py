@@ -13,15 +13,6 @@ def box_cxcywh_to_xyxy(config, x):
     boxes = boxes * scale
     return boxes
 
-def filter_non_elong(img_container):
-    y_extent = img_container.boxes[:,3] - img_container.boxes[:,1]
-    x_extent = img_container.boxes[:,2] - img_container.boxes[:,0]
-    keep = x_extent*1.15 < y_extent
- 
-    img_container.scores = img_container.scores[keep]
-    img_container.boxes = img_container.boxes[keep]
-    return img_container
-
 def onnx_to_xyxy(config, img_container, raw_results, num_select: int = 150):
     out_logits = torch.from_numpy(raw_results[0])
     out_bbox = torch.from_numpy(raw_results[1])
@@ -38,8 +29,6 @@ def onnx_to_xyxy(config, img_container, raw_results, num_select: int = 150):
     return img_container
 
 def filter_boxes(config, img_container):
-    img_container = filter_non_elong(img_container)
-
     idx_keep = nms(img_container.boxes, img_container.scores, config.POSTPROCESSING_NMSIOU)
     boxes = img_container.boxes[idx_keep]
     scores = img_container.scores[idx_keep]
