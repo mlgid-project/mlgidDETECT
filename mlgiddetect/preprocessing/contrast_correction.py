@@ -80,6 +80,7 @@ def _contrast_correction(
         img[mask] =  normalize(img, mask)
 
     if histogram_equalization:
+        img[mask] = normalize(img, mask)
         img = img *255
         hist_input = img[mask]
         if config.PREPROCESSING_CUDA:
