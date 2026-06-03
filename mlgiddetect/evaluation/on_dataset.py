@@ -1,5 +1,5 @@
 import logging
-from mlgiddetect.dataloader import H5GIWAXSDataset
+from mlgiddetect.dataloader import H5GIWAXSDataset, PyGIDDataset, detect_dataset_type
 from mlgiddetect.evaluation import Evaluator, get_full_conf_results
 from mlgiddetect.export import write_logs, write_single_log
 from mlgiddetect.utils import open_pkl_file
@@ -18,7 +18,11 @@ def eval_on_dataset(config, prepro_func, postpro_func=standard_postprocessing, d
     if dataset is None:
         if config.INPUT_DATASET.endswith(('pkl','pickle','p')):
             dataset = open_pkl_file(config.INPUT_DATASET)
+        elif detect_dataset_type(config.INPUT_DATASET) == 'pygid':
+            #pyGID/NeXus labeled file (e.g. organic_labeled.h5): img_gid_q + fitted_peaks GT
+            dataset = PyGIDDataset(config, preprocess_func=prepro_func, buffer_size=5, load_labels=True)
         else:
+            #roi_data labeled file (e.g. 41_test.h5)
             dataset = H5GIWAXSDataset(config, config.INPUT_DATASET, preprocess_func=prepro_func, buffer_size=5)
 
         #save dataset
@@ -40,32 +44,37 @@ def eval_on_dataset(config, prepro_func, postpro_func=standard_postprocessing, d
     img_processing = Inference(config)
 
     logging.info('Started evaluation')
-    for i, img_container in enumerate(dataset):
-        img_container.config.POSTPROCESSING_SCORE = 0.1
-        giwaxs_img = img_container.converted_polar_image
-        labels = img_container.polar_labels
-        confidences = img_container.polar_labels.confidences
-        gt_boxes = Tensor(labels.boxes)
+    try:
+        for i, img_container in enumerate(dataset):
+            img_container.config.POSTPROCESSING_SCORE = 0.1
+            giwaxs_img = img_container.converted_polar_image
+            labels = img_container.polar_labels
+            confidences = img_container.polar_labels.confidences
+            gt_boxes = Tensor(labels.boxes)
 
-        if postpro_func:
-            img_container = standard_postprocessing(img_container, img_processing.infer(img_container))
-            if config.POSTPROCESSING_TTA:
-                img_container = tta_inference(config, img_container, img_processing)
-        else:
-            img_container = img_processing.infer(img_container)
-        pred_boxes = img_container.boxes
-        scores = Tensor(img_container.scores)
-        
-        if export_path is not None:
-            results['images'].append(Tensor(giwaxs_img[0]).cpu())
-            results['raw_images'].append(Tensor(img_container.raw_polar_image))
-            results['gt_boxes'].append(gt_boxes)
-            results['gt_scores'].append(Tensor(confidences).cpu())
-            results['pred_boxes'].append(pred_boxes)
-            results['pred_scores'].append(scores)
+            if postpro_func:
+                img_container = standard_postprocessing(img_container, img_processing.infer(img_container))
+                if config.POSTPROCESSING_TTA:
+                    img_container = tta_inference(config, img_container, img_processing)
+            else:
+                img_container = img_processing.infer(img_container)
+            pred_boxes = img_container.boxes
+            scores = Tensor(img_container.scores)
 
-        logging.info('evaluating img nr ' + str(i))
-        evaluator.get_exp_metrics(pred_boxes, scores, gt_boxes, confidences)
+            if export_path is not None:
+                results['images'].append(Tensor(giwaxs_img[0]).cpu())
+                results['raw_images'].append(Tensor(img_container.raw_polar_image))
+                results['gt_boxes'].append(gt_boxes)
+                results['gt_scores'].append(Tensor(confidences).cpu())
+                results['pred_boxes'].append(pred_boxes)
+                results['pred_scores'].append(scores)
+
+            #logging.info('evaluating img nr ' + str(i))
+            evaluator.get_exp_metrics(pred_boxes, scores, gt_boxes, confidences)
+    finally:
+        #PyGIDDataset spawns a non-daemon write_worker that must be joined; H5GIWAXSDataset.close() is a no-op
+        if hasattr(dataset, 'close'):
+            dataset.close()
 
     if export_path is not None:
         with open(export_path + '/object_detection_results.pkl', 'wb') as handle:

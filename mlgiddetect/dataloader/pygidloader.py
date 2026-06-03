@@ -17,7 +17,7 @@ import numpy as np
 import cv2 as cv
 from h5py import File, Group, Dataset
 from mlgiddetect.preprocessing import contrast_correction
-from mlgiddetect.dataloader import ImageContainer
+from mlgiddetect.dataloader import ImageContainer, Labels
 
 
 sys.path.append("..")
@@ -60,6 +60,8 @@ class PyGIDDataset():
     write_worker: Process = None
     #buffer size of the worker. E.g. 3 are loaded in advance by default.
     buffer_size: int = 5
+    #load ground-truth peaks from data/analysis/frameXXXXX/fitted_peaks (labeled evaluation only)
+    load_labels: bool = False
     image_metrics: list = field(default_factory=list)
     file_locked = Lock()
 
@@ -143,8 +145,104 @@ def load_worker(data_loader: PyGIDDataset):
             img_container.nr = i
             img_container.raw_reciprocal = np.nan_to_num(raw_img)
             img_container.converted_polar_image, img_container.raw_polar_image, img_container.converted_mask = data_loader.preprocess_func(data_loader.config, img_container.raw_reciprocal, counter)
+            if data_loader.load_labels:
+                data_loader.file_locked.acquire()
+                f = File(data_loader.path, 'r')
+                img_container.polar_labels = _load_fittedpeaks(f, key, i, data_loader)
+                f.close()
+                data_loader.file_locked.release()
             data_loader.read_queue.put(img_container)
     data_loader.read_queue.put(None)
+
+
+def _load_fittedpeaks(f, key: str, frame_nr: int, data_loader: 'PyGIDDataset') -> Labels:
+    """Read GT peaks from data/analysis/frameXXXXX/fitted_peaks and return a populated Labels object.
+
+    The peak confidence is derived from the discrete ``visibility`` level (3->1.0, 2->0.5, 1->0.1)
+    so it lands in the same {0.1, 0.5, 1.0} space the evaluator expects from H5GIWAXSDataset. The
+    raw ``score`` field is used as a fallback for any other visibility value.
+
+    Args:
+        f: open h5py File handle (read mode)
+        key: top-level H5 group key for the sample
+        frame_nr: zero-based frame index
+        data_loader: PyGIDDataset instance (provides config and min_confidence)
+
+    Returns:
+        Labels with .boxes (N x 4, polar pixel coords), .confidences, .is_ring and .visibility populated.
+    """
+    labels = Labels()
+    frame_path = f'{key}/data/analysis/frame{str(frame_nr).zfill(5)}/fitted_peaks'
+
+    if frame_path not in f:
+        logging.debug('No fitted_peaks found at %s, returning empty labels.', frame_path)
+        return labels
+
+    peaks = f[frame_path][()]
+    if len(peaks) == 0:
+        return labels
+
+    polar_shape = data_loader.polar_img_shape
+    q_max = data_loader.config.GEO_QMAX
+
+    radius = peaks['radius'].astype(np.float64)             # centre, q units
+    radius_width = peaks['radius_width'].astype(np.float64) # full width, q units
+    angle = peaks['angle'].astype(np.float64)              # centre, degrees (0-90)
+    angle_width = peaks['angle_width'].astype(np.float64)  # full width, degrees
+    is_ring = peaks['is_ring']
+    visibility = peaks['visibility'].astype(np.int32)
+
+    # Visibility level -> confidence in the {0.1, 0.5, 1.0} space used for metric stratification.
+    confidences = np.select(
+        [visibility == 3, visibility == 2, visibility == 1],
+        [1.0, 0.5, 0.1],
+        default=peaks['score'].astype(np.float32),
+    ).astype(np.float32)
+
+    # Convert to polar image pixel coordinates
+    radius_pixel = radius / q_max * polar_shape[1]
+    radius_half_pixel = radius_width / q_max * polar_shape[1] / 2
+    angle_pixel = angle * polar_shape[0] / 90
+    angle_half_pixel = angle_width * polar_shape[0] / 90 / 2
+
+    boxes = np.stack([
+        radius_pixel - radius_half_pixel,  # x1
+        angle_pixel - angle_half_pixel,    # y1
+        radius_pixel + radius_half_pixel,  # x2
+        angle_pixel + angle_half_pixel,    # y2
+    ], axis=-1).astype(np.float32)
+
+    # Exclude visibility=0 peaks (not reliably visible) from the ground truth.
+    keep = visibility != 0
+    if data_loader.min_confidence is not None:
+        keep &= confidences >= data_loader.min_confidence
+    boxes = boxes[keep]
+    confidences = confidences[keep]
+    is_ring = is_ring[keep]
+    visibility = visibility[keep]
+
+    labels.boxes = boxes
+    labels.confidences = confidences
+    labels.is_ring = list(is_ring)
+    labels.visibility = visibility
+    return labels
+
+
+def detect_dataset_type(path):
+    """Auto-detect the labeled-dataset layout of an h5 file.
+
+    Returns 'pygid' for pyGID/NeXus files (any top-level group exposing ``data/img_gid_q``,
+    e.g. organic_labeled.h5), otherwise 'h5giwaxs' for the roi_data-style files (e.g. 41_test.h5).
+    Defaulting to 'h5giwaxs' keeps every existing file working unchanged.
+    """
+    with File(path, 'r') as f:
+        for key in f.keys():
+            grp = f[key]
+            if isinstance(grp, Group) and 'data' in grp:
+                data = grp['data']
+                if isinstance(data, Group) and 'img_gid_q' in data:
+                    return 'pygid'
+    return 'h5giwaxs'
 
 
 pygid_results_dtype = np.dtype([

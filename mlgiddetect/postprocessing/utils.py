@@ -13,7 +13,7 @@ def box_cxcywh_to_xyxy(config, x):
     boxes = boxes * scale
     return boxes
 
-def onnx_to_xyxy(config, img_container, raw_results, num_select: int = 150):
+def onnx_to_xyxy(config, img_container, raw_results, num_select: int = 225):
     out_logits = torch.from_numpy(raw_results[0])
     out_bbox = torch.from_numpy(raw_results[1])
 

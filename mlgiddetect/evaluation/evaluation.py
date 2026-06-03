@@ -193,7 +193,13 @@ def get_full_conf_results(exp_metrics, name: str = 'exp metrics', max_fp: float 
     rpres = (
         recalls, precisions, accuracies, scores, av_precision, recalls_levels, fp_nums
     ) = recall_precision_curve_with_intensities(exp_metrics)
-    
+
+    # A dataset may legitimately lack one of the confidence levels (e.g. no visibility=3 peaks).
+    # Default any missing level to a zero-recall curve so AP at that level reports 0 instead of KeyError.
+    n = len(precisions)
+    for level in (np.float32(1.0), np.float32(0.5), np.float32(0.1)):
+        recalls_levels.setdefault(level, [0.0] * n)
+
     df_ap = pd.DataFrame(data={
         'ap_high': _get_av_precision(recalls_levels[1.], precisions),
         'ap_med': _get_av_precision(recalls_levels[0.5], precisions),
