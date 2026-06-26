@@ -107,15 +107,3 @@ def add_batch_and_color_channel(img: np.array):
 def grayscale_to_color(img: np.array):
     return np.concatenate((img,)*3, axis=1)
 
-def log_contrast(img_container):
-    img = img_container.raw_polar_image
-    if img.ndim == 2:
-        img = img[np.newaxis, np.newaxis, :, :]
-    elif img.ndim == 3:
-        img = img[np.newaxis, :, :, :]
-
-    eps = 1e-6
-    out = np.log1p(img + eps)
-    out = out / out.max()
-    img_container.raw_polar_image = out.astype(np.float32)
-    return img_container

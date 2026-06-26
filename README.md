@@ -52,6 +52,35 @@ Set ```PREPROCESSING CUDA: True``` in the config file
 
 ```python main.py --config_file=./faster_rcnn.yaml```
 
+### Model selection & ensemble
+
+Models are configured in the `MODEL` section of a config file. Each model slot accepts either a
+**keyword** (a model that is auto-downloaded and cached in `~/.local/share/mlgiddetect/`) or a
+**path** to a local `.onnx` file:
+
+| keyword | model |
+|---|---|
+| `base` | default model for `TYPE` (the 2-class class-aware dino model, or the faster_rcnn model) |
+| `ssl_pretrain` | SSL-pretrained 2-class dino model |
+| `dino_old` | legacy single-class (91-class) dino model |
+
+```yaml
+MODEL:
+  TYPE: 'dino'                 # 'dino' or 'faster_rcnn'
+  ONNX_BASE: base              # model used on its own; a keyword or a path to an .onnx
+  ENSEMBLE_ENABLED: False      # dino only: fuse ONNX_BASE + ONNX_ENSEMBLE (detection-level)
+  ONNX_ENSEMBLE: ssl_pretrain  # second model, used only when ENSEMBLE_ENABLED is True
+```
+
+- **Single model** — `ENSEMBLE_ENABLED: False` runs `ONNX_BASE` alone.
+- **Ensemble (dino only)** — `ENSEMBLE_ENABLED: True` runs `ONNX_BASE` + `ONNX_ENSEMBLE` and fuses
+  their detections with class-aware NMS. Both members must be 2-class ring/segment models, so keep
+  `POSTPROCESSING.CLASSAWARE_NMS: True`.
+- **faster_rcnn** — the ensemble is ignored; the single `ONNX_BASE` model is always used.
+
+To use the legacy model, set `ONNX_BASE: dino_old`, `ENSEMBLE_ENABLED: False` and
+`POSTPROCESSING.CLASSAWARE_NMS: False` (the 91-class model needs single-class NMS).
+
 ### Using the PyPI package
 
 Use [mlgidDETECT_tutorial.ipynb](https://github.com/mlgid-project/mlgidDETECT/blob/main/mlgidDETECT_tutorial.ipynb) to get started.

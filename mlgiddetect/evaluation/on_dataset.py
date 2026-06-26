@@ -5,8 +5,8 @@ from mlgiddetect.export import write_logs, write_single_log
 from mlgiddetect.utils import open_pkl_file
 from mlgiddetect.postprocessing import SmallQFilter, standard_postprocessing, boxes_polar_to_reciprocal, boxes_reciprocal_q_to_xy, polar_to_cartesian
 from mlgiddetect.postprocessing.utils import onnx_to_xyxy, filter_boxes
-from mlgiddetect.inference.tta_inference import tta_inference
-from mlgiddetect.inference.inference import Inference
+from mlgiddetect.inference.inference import load_sessions
+from mlgiddetect.postprocessing.postprocessing import ensemble_postprocessing
 import pickle
 from torch import Tensor
 from torchvision.ops import nms
@@ -41,7 +41,9 @@ def eval_on_dataset(config, prepro_func, postpro_func=standard_postprocessing, d
             'pred_scores': list()
         }
     
-    img_processing = Inference(config)
+    # dino ensemble (MODEL.ENSEMBLE_ENABLED) -> [ONNX_BASE, ONNX_ENSEMBLE] fused;
+    # otherwise a single model (ONNX_BASE; faster_rcnn always lands here).
+    sessions = load_sessions(config)
 
     logging.info('Started evaluation')
     try:
@@ -53,11 +55,14 @@ def eval_on_dataset(config, prepro_func, postpro_func=standard_postprocessing, d
             gt_boxes = Tensor(labels.boxes)
 
             if postpro_func:
-                img_container = standard_postprocessing(img_container, img_processing.infer(img_container))
-                if config.POSTPROCESSING_TTA:
-                    img_container = tta_inference(config, img_container, img_processing)
+                if len(sessions) > 1:
+                    config.POSTPROCESSING_CLASSAWARE_NMS = True
+                    raw_results_list = [s.infer(img_container) for s in sessions]
+                    img_container = ensemble_postprocessing(img_container, raw_results_list)
+                else:
+                    img_container = standard_postprocessing(img_container, sessions[0].infer(img_container))
             else:
-                img_container = img_processing.infer(img_container)
+                img_container = sessions[0].infer(img_container)
             pred_boxes = img_container.boxes
             scores = Tensor(img_container.scores)
 
@@ -69,7 +74,7 @@ def eval_on_dataset(config, prepro_func, postpro_func=standard_postprocessing, d
                 results['pred_boxes'].append(pred_boxes)
                 results['pred_scores'].append(scores)
 
-            #logging.info('evaluating img nr ' + str(i))
+            logging.info('evaluating img nr ' + str(i))
             evaluator.get_exp_metrics(pred_boxes, scores, gt_boxes, confidences)
     finally:
         #PyGIDDataset spawns a non-daemon write_worker that must be joined; H5GIWAXSDataset.close() is a no-op

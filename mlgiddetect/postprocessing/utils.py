@@ -1,6 +1,5 @@
 import torch
-from torchvision.ops import nms, box_iou
-from typing import List, Tuple
+from torchvision.ops import nms
 
 # for output bounding box post-processing
 def box_cxcywh_to_xyxy(config, x):
@@ -22,84 +21,47 @@ def onnx_to_xyxy(config, img_container, raw_results, num_select: int = 225):
     topk_values, topk_indexes = torch.topk(prob.view(out_logits.shape[0], -1), num_select, dim=1)
     img_container.scores = topk_values[0]
     topk_boxes = topk_indexes[0] // out_logits.shape[2]
-    
+    # predicted class per selected box (used by class-aware NMS; harmless for single-class models)
+    img_container.pred_labels = topk_indexes[0] % out_logits.shape[2]
+
     img_container.boxes = box_cxcywh_to_xyxy(config, out_bbox)
     img_container.boxes = img_container.boxes[topk_boxes]
 
     return img_container
 
 def filter_boxes(config, img_container):
-    idx_keep = nms(img_container.boxes, img_container.scores, config.POSTPROCESSING_NMSIOU)
-    boxes = img_container.boxes[idx_keep]
-    scores = img_container.scores[idx_keep]
+    """NMS then score threshold.
+
+    If ``config.POSTPROCESSING_CLASSAWARE_NMS`` is set (2-class ring/segment model, segment=0 /
+    ring=1), NMS is run per predicted class with class-specific IoU thresholds
+    (ring -> POSTPROCESSING_NMSIOU_RING, segment -> POSTPROCESSING_NMSIOU_SEG). Otherwise a single
+    NMS at POSTPROCESSING_NMSIOU is used (legacy single-class behaviour). Kept in lockstep with
+    mlgidDETECT_DINO/util/postprocessing.py.
+    """
+    boxes, scores = img_container.boxes, img_container.scores
+    labels = getattr(img_container, 'pred_labels', None)
+
+    if getattr(config, 'POSTPROCESSING_CLASSAWARE_NMS', False) and labels is not None:
+        class_iou = {1: config.POSTPROCESSING_NMSIOU_RING, 0: config.POSTPROCESSING_NMSIOU_SEG}
+        keep_parts = []
+        for cls, iou_thr in class_iou.items():
+            cls_idx = (labels == cls).nonzero(as_tuple=True)[0]
+            if cls_idx.numel():
+                kept = nms(boxes[cls_idx], scores[cls_idx], iou_thr)
+                keep_parts.append(cls_idx[kept])
+        idx_keep = torch.cat(keep_parts) if keep_parts else torch.empty(0, dtype=torch.long, device=boxes.device)
+    else:
+        idx_keep = nms(boxes, scores, config.POSTPROCESSING_NMSIOU)
+
+    boxes = boxes[idx_keep]
+    scores = scores[idx_keep]
+    labels = labels[idx_keep] if labels is not None else None
 
     to_keep = scores > config.POSTPROCESSING_SCORE
     img_container.boxes = boxes[to_keep]
     img_container.scores = scores[to_keep]
+    if labels is not None:
+        img_container.pred_labels = labels[to_keep]
 
     return img_container
 
-def consensus_boxes(
-    boxes_list: List[torch.Tensor],
-    scores_list: List[torch.Tensor],
-    iou_thr: float = 0.5,
-    min_sets: int = 2
-) -> Tuple[torch.Tensor, torch.Tensor]:
-    """
-    Consensus box fusion: keeps boxes that appear in >= min_sets predictions
-    using IoU matching, and returns fused boxes with aggregated scores.
-    """
-    num_sets = len(boxes_list)
-    device = boxes_list[0].device if boxes_list else torch.device('cpu')
-
-    all_boxes, all_scores, all_set_ids = [], [], []
-    for set_id, (b, s) in enumerate(zip(boxes_list, scores_list)):
-        if len(b) > 0:
-            all_boxes.append(b)
-            all_scores.append(s)
-            all_set_ids.append(torch.full((len(b),), set_id, device=device, dtype=torch.long))
-
-    if not all_boxes:
-        return torch.empty((0, 4), device=device), torch.empty((0,), device=device)
-
-    boxes = torch.cat(all_boxes)
-    scores = torch.cat(all_scores)
-    set_ids = torch.cat(all_set_ids)
-
-    # anchor each cluster to its highest-score box
-    order = scores.argsort(descending=True)
-    boxes, scores, set_ids = boxes[order], scores[order], set_ids[order]
-
-    iou_matrix = box_iou(boxes, boxes)
-    processed = torch.zeros(len(boxes), dtype=torch.bool, device=device)
-    fused_boxes, fused_scores = [], []
-
-    for i in range(len(boxes)):
-        if processed[i]:
-            continue
-        cluster_mask = (iou_matrix[i] >= iou_thr) & ~processed
-        cluster_idx = cluster_mask.nonzero(as_tuple=True)[0]
-
-        cluster_sets = set_ids[cluster_idx]
-        unique_sets = cluster_sets.unique()
-        if unique_sets.numel() >= min_sets:
-            cluster_boxes = boxes[cluster_idx]
-            cluster_scores = scores[cluster_idx]
-            weights = cluster_scores / cluster_scores.sum()
-            fused_boxes.append((cluster_boxes * weights.unsqueeze(1)).sum(0))
-            fused_scores.append(cluster_scores.mean() * (unique_sets.numel() / num_sets))
-
-        processed[cluster_mask] = True
-
-    if not fused_boxes:
-        return torch.empty((0, 4), device=device), torch.empty((0,), device=device)
-
-    return torch.stack(fused_boxes), torch.stack(fused_scores)
-
-
-def box_flip_horizontal(img_container):
-    flipped_boxes = img_container.boxes.clone()
-    flipped_boxes[:, 0] = img_container.raw_polar_image.shape[-1] - img_container.boxes[:, 2]
-    flipped_boxes[:, 2] = img_container.raw_polar_image.shape[-1] - img_container.boxes[:, 0]
-    img_container.boxes = flipped_boxes
-    return img_container
