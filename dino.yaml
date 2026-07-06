@@ -14,7 +14,7 @@ PREPROCESSING:
   FLIPHORIZONTAL: False         #flip the image horizontally for preprocessing
   QUAZIPOLAR: False             #use quazipolar transformation for preprocessing 
   LOG: True                     #use log contrast correction for preprocessing
-  HISTOGRAMEQUALIZATION: True   #model trained on histeq input -> MUST be True (False drops organic 0.605->0.55)
+  HISTOGRAMEQUALIZATION: True   #model trained on histeq input
   PERFORMCLIPPING: True         #perform clipping of pixel values for preprocessing
   HIGHERCLIPPINGPERCENTILE: 99.5 #upper clipping percentile for preprocessing
   LOWERCLIPPINGPERCENTILE: 5.0  #lower clipping percentile for preprocessing
