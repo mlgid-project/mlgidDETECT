@@ -1,6 +1,6 @@
 [project]
 name = "mlgiddetect"
-version = "0.2.3"
+version = "0.2.4"
 description = "Inference package for GIWAXS peak detection."
 authors = [{ name = "Constantin Völter", email = "constantin.voelter@gmail.com" }, { name = "Nico Lerch", email = "nico.lerch@uni-tuebingen.de" }]
 license = { text = "MIT" }
@@ -18,7 +18,7 @@ dependencies = [
     "tifffile",
     "torch",
     "torchvision",
-    "onnxruntime-gpu",
+    "onnxruntime",
     "opencv-python"
 ]
 

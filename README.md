@@ -57,6 +57,18 @@ Set ```PREPROCESSING CUDA: True``` in the config file
 Use [mlgidDETECT_tutorial.ipynb](https://github.com/mlgid-project/mlgidDETECT/blob/main/mlgidDETECT_tutorial.ipynb) to get started.
 
 
-### GPU support with CUDA 12.X
-If a GPU is available, it is automatically used for inference.
+### GPU support
+The pip package depends on the CPU build of ONNX Runtime, which works on every machine.
+For GPU inference, replace it with the GPU build (never install both at the same time,
+they share the same `onnxruntime` module and overwrite each other):
+
+```
+pip uninstall -y onnxruntime
+pip install onnxruntime-gpu
+```
+
+Note that current `onnxruntime-gpu` wheels require the CUDA 13 runtime
+(`libcudart.so.13`); on machines with a CUDA 12 driver, install an
+`onnxruntime-gpu` version built for CUDA 12 instead. If the GPU build is
+installed and CUDA is available, it is automatically used for inference.
 To use CUDA for preprocessing, use the install instructions for GPU support.
