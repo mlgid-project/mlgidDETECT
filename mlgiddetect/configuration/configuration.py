@@ -20,6 +20,12 @@ class Config:
         self.MODEL_REDOWNLOAD = False
         self.MODEL_TYPE = 'dino'
         self.MODEL_FORCE_CPU = False
+        #detection-level ensemble (dino only): fuse ONNX_BASE + ONNX_ENSEMBLE.
+        self.MODEL_ENSEMBLE_ENABLED = False
+        #'base' -> the model mlgidDETECT downloads automatically for MODEL_TYPE; or a path to an .onnx file.
+        self.MODEL_ONNX_BASE = 'base'
+        #second model, used only when MODEL_ENSEMBLE_ENABLED is True (dino).
+        self.MODEL_ONNX_ENSEMBLE = None
         self.INPUT_IMGPATH = None
         self.INPUT_DATASET = None
         self.INPUT_LABELED = False
@@ -40,7 +46,11 @@ class Config:
         self.OUTPUT_IMAGEPREFIX = ''
         self.POSTPROCESSING_SCORE = 0.4
         self.POSTPROCESSING_NMSIOU = 0.4
-        self.POSTPROCESSING_TTA = False
+        #class-aware NMS for the 2-class ring/segment dino model (segment=0, ring=1).
+        #Leave False for the legacy single-class (91-class) model. Mirror of mlgidDETECT_DINO.
+        self.POSTPROCESSING_CLASSAWARE_NMS = False
+        self.POSTPROCESSING_NMSIOU_RING = 0.1
+        self.POSTPROCESSING_NMSIOU_SEG = 0.4
 
 
     def load_config(self):

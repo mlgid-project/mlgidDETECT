@@ -9,7 +9,9 @@ import sys
 import appdirs
 
 MODEL_URLS = {
-    'dino': 'https://huggingface.co/mlgid-project/mlgidDETECTdino/resolve/main/model.onnx?download=true',
+    'dino': 'https://huggingface.co/mlgid-project/DINO_classAwareBaseline/resolve/main/model.onnx?download=true', # 2-class baseline model
+    'dino_old': 'https://huggingface.co/mlgid-project/mlgidDETECTdino/resolve/main/model.onnx?download=true',  # legacy 91-class model
+    'ssl_pretrain': 'https://huggingface.co/mlgid-project/DINO_SSLBackbone/resolve/main/model.onnx?download=true',  # 2-class SSL backbone model
     'frcnn': 'https://huggingface.co/mlgid-project/mlgidDETECTfrcnn/resolve/main/model.onnx?download=true'
 }
 
@@ -132,6 +134,14 @@ def get_model_path(config, model_name: str = 'faster_rcnn.onnx') -> Path:
     onnx_dir = data_dir / (model_name + '.onnx')
     if not check_onnx_filepath(config, onnx_dir) or config.MODEL_REDOWNLOAD:
         return download(config, model_name, destination=onnx_dir)
+    return str(onnx_dir)
+
+def get_named_model_path(config, key: str) -> Path:
+    """Resolve a named downloadable model (a MODEL_URLS key, e.g. 'dino_old') to a cached
+    .onnx path, downloading it from MODEL_URLS[key] if missing. Cached as <key>.onnx."""
+    onnx_dir = get_data_dir() / (key + '.onnx')
+    if not check_onnx_filepath(config, onnx_dir) or config.MODEL_REDOWNLOAD:
+        return download(config, key, destination=onnx_dir)
     return str(onnx_dir)
 
 def open_pkl_file(file_path: str):

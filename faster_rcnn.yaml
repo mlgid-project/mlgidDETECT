@@ -5,6 +5,8 @@ MODEL:
   TYPE: 'faster_rcnn'           #currently supported 'dino' and 'faster_rcnn'
   REDOWNLOAD: False             #redownload the model for each run
   FORCE_CPU: False              #force inference on CPU
+  ENSEMBLE_ENABLED: False       #ensemble is dino only; ignored for faster_rcnn
+  ONNX_BASE: base               #'base' = auto-downloaded default model, or a path to an .onnx
 
 PREPROCESSING:
   CUDA: False                    #use CUDA for preprocessing if available

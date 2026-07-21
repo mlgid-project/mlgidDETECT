@@ -5,9 +5,10 @@ import multiprocessing as mp
 mp.set_start_method('spawn',force=True)
 
 from mlgiddetect.configuration import Config
-from mlgiddetect.inference import Inference, tta_inference
+from mlgiddetect.inference import load_sessions
 from mlgiddetect.preprocessing import standard_preprocessing
 from mlgiddetect.postprocessing import standard_postprocessing
+from mlgiddetect.postprocessing.postprocessing import ensemble_postprocessing
 from mlgiddetect.dataloader import load_img_from_disk, PyGIDDataset, H5GIWAXSDataset
 from mlgiddetect.evaluation import eval_on_dataset
 from mlgiddetect.export import plot_img_with_boxes, export_pygid_h5
@@ -36,24 +37,27 @@ if __name__ == '__main__':
         else:
             #add detected boxes to PyGIDDataset dataset  
             dataset = PyGIDDataset(config, config.INPUT_DATASET, preprocess_func=standard_preprocessing, buffer_size=10)
-            imp = Inference(config)
+            sessions = load_sessions(config)
             for i, img_container in enumerate(dataset):
                 logging.info("Processing image %s", i)
-                raw_results = imp.infer(img_container)
-                img_container = standard_postprocessing(img_container, raw_results)
-                if config.POSTPROCESSING_TTA:
-                    img_container = tta_inference(config, img_container, imp)
+                if len(sessions) > 1:
+                    config.POSTPROCESSING_CLASSAWARE_NMS = True
+                    img_container = ensemble_postprocessing(img_container, [s.infer(img_container) for s in sessions])
+                else:
+                    img_container = standard_postprocessing(img_container, sessions[0].infer(img_container))
                 dataset.export_pygid(img_container)
             dataset.close()
 
     elif config.INPUT_IMGPATH:
         #peak detection on single image
-        imp = Inference(config)
+        sessions = load_sessions(config)
         img_container = load_img_from_disk(config)
         img_container.converted_polar_image, img_container.raw_polar_image, img_container.converted_mask = standard_preprocessing(config, img_container.raw_reciprocal)
-        raw_results = imp.infer(img_container)
-        img_container = standard_postprocessing(img_container, raw_results)
-        if config.POSTPROCESSING_TTA:
-            img_container = tta_inference(config, img_container, imp)
+        if len(sessions) > 1:
+            config.POSTPROCESSING_CLASSAWARE_NMS = True
+            img_container = ensemble_postprocessing(img_container, [s.infer(img_container) for s in sessions])
+        else:
+            raw_results = sessions[0].infer(img_container)
+            img_container = standard_postprocessing(img_container, raw_results)
         plot_img_with_boxes(config, np.transpose(img_container.converted_polar_image[0], (1,2,0)), img_container.scores, img_container.boxes, config.OUTPUT_FOLDER, name='testoutput')
         export_pygid_h5(config, img_container=img_container)
