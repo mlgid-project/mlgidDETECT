@@ -9,7 +9,7 @@ import sys
 import appdirs
 
 MODEL_URLS = {
-    'dino': 'https://huggingface.co/mlgid-project/DINO_classAwareBaseline/resolve/main/model.onnx?download=true',
+    'dino': 'https://huggingface.co/mlgid-project/DINO_classAwareBaseline/resolve/main/model.onnx?download=true', # 2-class baseline model
     'dino_old': 'https://huggingface.co/mlgid-project/mlgidDETECTdino/resolve/main/model.onnx?download=true',  # legacy 91-class model
     'ssl_pretrain': 'https://huggingface.co/mlgid-project/DINO_SSLBackbone/resolve/main/model.onnx?download=true',  # 2-class SSL backbone model
     'frcnn': 'https://huggingface.co/mlgid-project/mlgidDETECTfrcnn/resolve/main/model.onnx?download=true'
