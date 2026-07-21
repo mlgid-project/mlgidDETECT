@@ -2,11 +2,14 @@ name: mlgiddetect-gpu
 channels:
   - conda-forge
   - nvidia/label/cuda-12.9.1
-dependencies:  
-  - python=3.9
+dependencies:
+  - python=3.12
   - numpy<2
   - pip
-  - onnxruntime
+  # NOTE: no conda `onnxruntime` here: the pip install of this
+  # package brings onnxruntime-gpu==1.26.0, and the conda-forge
+  # onnxruntime is the CPU build shipping the SAME python module,
+  # so co-installing clobbers the GPU one.
   - pytorch
   - torchvision
   - ffmpeg=4.3.2

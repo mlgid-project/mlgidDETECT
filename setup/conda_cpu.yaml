@@ -4,7 +4,9 @@ channels:
   - conda-forge
 dependencies:
   - cpuonly
-  - python=3.9
+  # 3.12 floor comes from onnxruntime-gpu 1.26.0 (>=3.11, and 3.12 is
+  # the newest python the pytorch=2.5.1 conda builds cover).
+  - python=3.12
   - pip
   - pytorch=2.5.1
   - torchvision=0.20.1

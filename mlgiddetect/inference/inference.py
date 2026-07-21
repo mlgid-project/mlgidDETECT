@@ -5,7 +5,6 @@ import numpy as np
 import onnxruntime as rt
 from mlgiddetect.utils import path_utils
 from mlgiddetect.dataloader import ImageContainer
-import torch
 
 class Inference:
     def __init__(self, config, model_path=None):

@@ -4,7 +4,8 @@ version = "0.2.6"
 description = "Inference package for GIWAXS peak detection."
 authors = [{ name = "Constantin Völter", email = "constantin.voelter@gmail.com" }, { name = "Nico Lerch", email = "nico.lerch@uni-tuebingen.de" }]
 license = { text = "MIT" }
-requires-python = ">=3.9"
+# Floor set by onnxruntime-gpu 1.26.0 (no wheels below 3.11).
+requires-python = ">=3.11"
 readme = "README.md"
 
 dependencies = [
