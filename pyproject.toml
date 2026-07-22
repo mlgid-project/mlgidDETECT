@@ -1,11 +1,10 @@
 [project]
 name = "mlgiddetect"
-version = "0.2.6"
+version = "0.2.7"
 description = "Inference package for GIWAXS peak detection."
 authors = [{ name = "Constantin Völter", email = "constantin.voelter@gmail.com" }, { name = "Nico Lerch", email = "nico.lerch@uni-tuebingen.de" }]
 license = { text = "MIT" }
-# Floor set by onnxruntime-gpu 1.26.0 (no wheels below 3.11).
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 readme = "README.md"
 
 dependencies = [
@@ -19,7 +18,13 @@ dependencies = [
     "tifffile",
     "torch",
     "torchvision",
-    "onnxruntime-gpu==1.26.0",
+    # All three pins are CUDA 12 builds (1.27+ switched to CUDA 13, which is
+    # loaded at import time and breaks environments without it). The version
+    # differs per Python only because of wheel availability: 1.26.0 ships
+    # cp311+, 1.23.2 is the last with cp310 wheels, 1.19.2 the last with cp39.
+    "onnxruntime-gpu==1.26.0; python_version >= '3.11'",
+    "onnxruntime-gpu==1.23.2; python_version == '3.10'",
+    "onnxruntime-gpu==1.19.2; python_version < '3.10'",
     "opencv-python"
 ]
 

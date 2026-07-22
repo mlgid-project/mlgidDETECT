@@ -87,12 +87,14 @@ Use [mlgidDETECT_tutorial.ipynb](https://github.com/mlgid-project/mlgidDETECT/bl
 
 
 ### GPU support
-The pip package depends on the GPU build of ONNX Runtime, pinned to
-`onnxruntime-gpu==1.26.0`. This is a CUDA 12 build (the same CUDA
-generation the conda GPU environment ships); newer `onnxruntime-gpu`
-wheels (1.27+) require the CUDA 13 runtime and load it at import time,
-which breaks environments without it. If the GPU build is installed and
-CUDA is available, it is automatically used for inference.
+The pip package depends on the GPU build of ONNX Runtime, pinned per
+Python version: `onnxruntime-gpu==1.26.0` on Python 3.11+, `1.23.2` on
+3.10 and `1.19.2` on 3.9 (the last releases with wheels for those
+Pythons). All three are CUDA 12 builds (the same CUDA generation the
+conda GPU environment ships); newer `onnxruntime-gpu` wheels (1.27+)
+require the CUDA 13 runtime and load it at import time, which breaks
+environments without it. If the GPU build is installed and CUDA is
+available, it is automatically used for inference.
 
 For CPU-only machines, replace it with the CPU build (never install
 both at the same time, they share the same `onnxruntime` module and
