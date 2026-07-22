@@ -64,6 +64,14 @@ jobs:
         print('providers:', rt.get_available_providers())
         EOF
 
+    # The runner has no GPU, so this exercises the exact scenario that segfaulted
+    # mlgidBASE's CI with mlgiddetect 0.2.7: onnxruntime-gpu wheel installed,
+    # Inference() left to pick the provider itself, real models, real images.
+    - name: Run test suite (full detection pipeline)
+      run: |
+        pip install pytest
+        pytest tests -v
+
     - name: CPU inference on a minimal model
       run: |
         pip install onnx
