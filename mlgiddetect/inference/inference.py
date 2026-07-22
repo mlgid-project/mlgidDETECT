@@ -6,6 +6,22 @@ import onnxruntime as rt
 from mlgiddetect.utils import path_utils
 from mlgiddetect.dataloader import ImageContainer
 
+def _cuda_driver_usable():
+    """The onnxruntime-gpu wheel always lists CUDAExecutionProvider in
+    get_available_providers() — that reflects what is compiled into the wheel,
+    not whether the machine has a driver/GPU. Requesting the CUDA EP without one
+    segfaults on some ORT versions (e.g. 1.19.2), so probe the driver directly."""
+    import ctypes
+    try:
+        libcuda = ctypes.CDLL("libcuda.so.1" if sys.platform != "win32" else "nvcuda.dll")
+    except OSError:
+        return False
+    count = ctypes.c_int(0)
+    return (libcuda.cuInit(0) == 0 and
+            libcuda.cuDeviceGetCount(ctypes.byref(count)) == 0 and
+            count.value > 0)
+
+
 class Inference:
     def __init__(self, config, model_path=None):
         self.config = config
@@ -27,10 +43,14 @@ class Inference:
         # + the CUDA runtime are present). Gate only on the provider being available.
         use_gpu = (
             "CUDAExecutionProvider" in available_providers and
-            not config.MODEL_FORCE_CPU
+            not config.MODEL_FORCE_CPU and
+            _cuda_driver_usable()
         )
 
-        preferred_providers = ["CUDAExecutionProvider"] if use_gpu else ["CPUExecutionProvider"]
+        # Keep CPU in the list so ORT falls back instead of failing outright
+        # if the CUDA EP cannot be initialized despite a usable driver.
+        preferred_providers = ["CUDAExecutionProvider", "CPUExecutionProvider"] if use_gpu \
+            else ["CPUExecutionProvider"]
 
         if preferred_providers[0] == 'CUDAExecutionProvider':
             logging.info("Using the GPU for inference")
